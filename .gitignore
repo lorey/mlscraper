@@ -1,0 +1,6 @@
+.pytest_cache/
+venv/
+*.pyc
+
+# dir where I store the relevant papers
+papers/
