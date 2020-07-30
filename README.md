@@ -13,11 +13,13 @@ Currently, this is a proof of concept with a simplistic solution.
 ## How it works
 After you've defined the data you want to scrape, autoscrape will:
 
-- find your examples inside HTML
-- determine which rules to apply for extraction
-- extract the data for you with these rules
+- find your samples inside the HTML DOM
+- determine which rules/methods to apply for extraction
+- extract the data for you and return it in a dictionary
 
 ```python
+from autoscrape import MultiItemScraper
+
 # the items found on the training page
 items = [
     {"title": "One great result!", "description": "Some description"},
@@ -33,5 +35,7 @@ scraper.scrape(new_html)  # will apply the learned rules and extract new items
 
 
 ## Related work
+If you're interested in the underlying research, I can highly recommend these publications:
+
 - Learning to extract hierarchical information from semi-structured documents: http://ftp.cse.buffalo.edu/users/azhang/disc/disc01/cd1/out/papers/cikm/p250.pdf
 - WHISK: Extraction of structured and unstructured information: https://www.cis.uni-muenchen.de/~yeong/Kurse/ws0809/WebDataMining/whisk.pdf
