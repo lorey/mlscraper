@@ -24,12 +24,12 @@ class MultiItemScraper:
         self.value_selectors = value_selectors
 
     @staticmethod
-    def build(html, items):
+    def build(items, html):
         """
         Build the scraper by inferring rules.
 
-        :param html: HTML of the page.
         :param items: All(!) items found on the page
+        :param html: HTML of the page.
         :return:
         """
 

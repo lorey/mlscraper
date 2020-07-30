@@ -16,7 +16,7 @@ def test_extraction():
     with open(file_path) as file:
         html = file.read()
 
-    scraper = MultiItemScraper.build(html, items)
+    scraper = MultiItemScraper.build(items, html)
     assert scraper.scrape(html) == items
 
     # optional since they're only human guesses
