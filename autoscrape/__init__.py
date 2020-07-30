@@ -1,9 +1,9 @@
 import logging
-from collections import namedtuple, Counter
+from collections import Counter, namedtuple
 from statistics import mean
 
 from bs4 import BeautifulSoup, Tag
-from more_itertools import powerset, flatten
+from more_itertools import flatten, powerset
 
 
 class MultiItemScraper:
