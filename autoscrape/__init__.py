@@ -1,9 +1,12 @@
 import logging
-from collections import Counter
+from collections import Counter, namedtuple
+from typing import List
 
+import pandas as pd
 from bs4 import BeautifulSoup
 from more_itertools import flatten
 
+from autoscrape.ml import NodePreprocessing, train_pipeline
 from autoscrape.util import (
     get_common_ancestor_for_paths,
     get_common_ancestor_for_nodes,
@@ -12,6 +15,107 @@ from autoscrape.util import (
     get_selectors,
     derive_css_selector,
 )
+
+SingleItemSample = namedtuple("SingleItemSample", ["data", "html"])
+MultiItemSamples = namedtuple("MultiItemSamples", ["data", "html"])
+
+
+class SingleItemScraper:
+    def __init__(self, classifiers, min_match_proba=0.7):
+        self.classifiers = classifiers
+        self.min_match_proba = min_match_proba
+
+    @staticmethod
+    def build(samples: List[SingleItemSample]):
+        """
+        Build a scraper by inferring rules.
+
+        :param samples: Samples to train
+        :return: the scraper
+        """
+
+        # parse html
+        soups = [BeautifulSoup(sample.html, "lxml") for sample in samples]
+
+        # find samples on the pages
+        matches = []
+        for sample, soup in zip(samples, soups):
+            matches_per_item = {}
+            for key in sample.data.keys():
+                value_to_search = sample.data[key]
+                assert isinstance(value_to_search, str), "Only strings supported"
+                matches_per_item[key] = soup.find_all(text=value_to_search)
+            matches.append(matches_per_item)
+        print(matches)
+
+        matches_unique = []
+        for matches_item, sample in zip(matches, samples):
+            if all(len(matches_item[attr]) == 1 for attr in sample.data.keys()):
+                matches_item_unique = {
+                    attr: matches_item[attr][0] for attr in sample.data.keys()
+                }
+                matches_unique.append(matches_item_unique)
+            else:
+                logging.warning(
+                    "Sample values not unique on page, discarding: %s -> %s"
+                    % (sample, matches_item)
+                )
+                matches_unique.append(None)
+        print(matches_unique)
+
+        # for each attribute:
+        attributes = set(flatten(sample.data.keys() for sample in samples))
+        print(attributes)
+        classifiers = {}
+        for attr in attributes:
+            print(attr)
+            # 1. take all items with unique samples
+            # 2. mark nodes that match sample as true, others as false
+            training_data = []
+            for matches_item, soup in zip(matches_unique, soups):
+                node_to_find = matches_item[attr]
+                training_data.extend(
+                    [(node, node == node_to_find) for node in soup.descendants]
+                )
+
+            # 3. train classifier
+            pipeline = train_pipeline(*zip(*training_data))
+            classifiers[attr] = pipeline
+
+        return SingleItemScraper(classifiers)
+
+    def scrape(self, html):
+        soup = BeautifulSoup(html, "lxml")
+
+        # data is a dict, because page is one item
+        data = {}
+
+        for attr in self.classifiers.keys():
+            # predict proba of all nodes
+            node_predictions = self.classifiers[attr].predict_proba(soup.descendants)
+
+            # turn it into a data frame
+            df = pd.DataFrame(node_predictions, columns=["is_noise", "is_target"])
+
+            # re-add nodes to extract them later
+            df["node"] = pd.Series(soup.descendants)
+
+            # get best match
+            df_nodes_by_proba = df.sort_values("is_target", ascending=False)
+            best_match = df_nodes_by_proba.iloc[0]
+
+            # use if probability > threshold
+            if best_match["is_target"] > self.min_match_proba:
+                data[attr] = best_match["node"]
+            else:
+                logging.warning(
+                    "%s not found in html, probability %f < %f",
+                    attr,
+                    best_match["is_target"],
+                    self.min_match_proba,
+                )
+        # return the data dictionary
+        return data
 
 
 class MultiItemScraper:
@@ -24,14 +128,13 @@ class MultiItemScraper:
         self.value_selectors = value_selectors
 
     @staticmethod
-    def build(items, html):
+    def build(samples: MultiItemSamples):
         """
         Build the scraper by inferring rules.
-
-        :param items: All(!) items found on the page
-        :param html: HTML of the page.
-        :return:
         """
+
+        html = samples.html
+        items = samples.data
 
         # observation:
         # - if multiple common distinctive ancestors exist,
