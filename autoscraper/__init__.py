@@ -1,4 +1,5 @@
 import logging
+import re
 from collections import Counter, namedtuple
 from typing import List
 
@@ -42,15 +43,16 @@ class SingleItemScraper:
         for sample, soup in zip(samples, soups):
             matches_per_item = {}
             for key in sample.data.keys():
-                value_to_search = sample.data[key]
+                needle = sample.data[key]
 
                 # currently, we can only find strings with .text extraction
-                assert isinstance(value_to_search, str), "Only strings supported"
+                assert isinstance(needle, str), "Only strings supported"
 
                 # search for text, check if parent returns this text
-                text_matches = soup.find_all(text=value_to_search)
+                text_matches = soup.find_all(text=re.compile(needle))
+                logging.debug("Matches for %s: %s", needle, text_matches)
                 text_parents = (ns.parent for ns in text_matches)
-                tag_matches = [p for p in text_parents if p.text == value_to_search]
+                tag_matches = [p for p in text_parents if extract_text(p) == needle]
                 matches_per_item[key] = tag_matches
             matches.append(matches_per_item)
         print(matches)
@@ -114,7 +116,7 @@ class SingleItemScraper:
             # use if probability > threshold
             if best_match["is_target"] > self.min_match_proba:
                 # todo apply extractor based on attribute (.text, attrs[href], etc.)
-                data[attr] = best_match["node"].text
+                data[attr] = extract_text(best_match["node"])
             else:
                 logging.warning(
                     "%s not found in html, probability %f < %f",
@@ -124,6 +126,10 @@ class SingleItemScraper:
                 )
         # return the data dictionary
         return data
+
+
+def extract_text(node):
+    return node.text.strip()
 
 
 class MultiItemScraper:

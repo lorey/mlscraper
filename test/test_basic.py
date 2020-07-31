@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from bs4 import BeautifulSoup
 
 from autoscraper import (
     MultiItemScraper,
@@ -27,6 +28,20 @@ def multi_single_result_page_html():
     return read_file(os.path.join("static", "multi", "single-result-page.html"))
 
 
+@pytest.fixture
+def basic_html():
+    html = b""""
+    <html><body>
+    <div>
+    <div class="person-name"> 
+    Peter 
+    </div>
+    <div class="person-description"> Cool-looking guy </div>
+    </div>
+    </body></html>"""
+    return html
+
+
 def test_multi(multi_single_result_page_html):
     items = [
         {"title": "One great result!", "description": "Some description"},
@@ -49,3 +64,13 @@ def test_single(single_basic_train_html):
     scraper = SingleItemScraper.build(samples)
     result = scraper.scrape(single_basic_train_html)
     assert result == data
+
+
+def test_single_with_whitespace(basic_html):
+    data = {"name": "Peter", "description": "Cool-looking guy"}
+    samples = [SingleItemSample(data, basic_html)]
+    scraper = SingleItemScraper.build(samples)
+    result = scraper.scrape(
+        b'<html><body><div><div class="person-name">Klaus</div></div></body></html>'
+    )
+    assert result["name"] == "Klaus"
