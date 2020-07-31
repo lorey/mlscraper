@@ -2,5 +2,7 @@
 venv/
 *.pyc
 
+autoscraper.egg-info/
+
 # dir where I store the relevant papers
 papers/
