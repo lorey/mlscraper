@@ -1,4 +1,5 @@
 from collections import namedtuple
+from itertools import combinations, product
 from statistics import mean
 
 from bs4 import Tag
@@ -116,3 +117,54 @@ def derive_css_selector(unique_ancestors_per_item, soup):
                 pass
 
     return best.selector
+
+
+def generate_unique_path_selectors(node):
+    soup = list(node.parents)[-1]
+    for css_selector in generate_path_selectors(node):
+        matches = soup.select(css_selector)
+        if len(matches) == 1:
+            yield css_selector
+
+
+def generate_path_selectors(node):
+    """
+    Generate all possible selectors for this specific node
+    :return:
+    """
+
+    # we have a list of n ancestor notes and n-1 nodes including the last node
+    # the last node must get selected always
+
+    # so we will:
+    # 1) generate all selectors for current node
+    # 2) append possible selectors for the n-1 descendants
+    # starting with all node selectors and increasing number of used descendants
+
+    # remove unique parents as they don't improve selection
+    # body is unique, html is unique, document is bs4 root element
+    parents = [n for n in node.parents if n.name not in ("body", "html", "[document]")]
+    print(parents)
+
+    # loop from i=0 to i=len(parents) as we consider all parents
+    for parent_node_count in range(len(parents) + 1):
+        print("path of length %d" % parent_node_count)
+        for parent_nodes_sampled in combinations(parents, parent_node_count):
+            path_sampled = (node,) + parent_nodes_sampled
+            print(path_sampled)
+
+            # make a list of selector generators for each node in the path
+            # todo limit generated selectors -> huge product
+            selector_generators_for_each_path_node = [
+                generate_css_selectors_for_node(n) for n in path_sampled
+            ]
+
+            # generator that outputs selector paths
+            # e.g. (div, .wrapper, .main)
+            path_sampled_selectors = product(*selector_generators_for_each_path_node)
+
+            # create an actual css selector for each selector path
+            # e.g. .main > .wrapper > .div
+            for path_sampled_selector in path_sampled_selectors:
+                css_selector = " > ".join(reversed(path_sampled_selector))
+                yield css_selector
