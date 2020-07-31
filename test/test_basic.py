@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from autoscrape import (
+from autoscraper import (
     MultiItemScraper,
     MultiItemSamples,
     SingleItemScraper,

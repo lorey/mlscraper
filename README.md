@@ -18,7 +18,7 @@ After you've defined the data you want to scrape, autoscrape will:
 - extract the data for you and return it in a dictionary
 
 ```python
-from autoscrape import MultiItemScraper
+from autoscraper import MultiItemScraper
 
 # the items found on the training page
 items = [

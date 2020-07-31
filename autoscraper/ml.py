@@ -3,7 +3,7 @@ from sklearn.base import TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier
 
-from autoscrape.util import generate_unique_path_selectors
+from autoscraper.util import generate_unique_path_selectors
 
 
 class NodePreprocessing(TransformerMixin):

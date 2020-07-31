@@ -6,8 +6,8 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from more_itertools import flatten
 
-from autoscrape.ml import NodePreprocessing, train_pipeline
-from autoscrape.util import (
+from autoscraper.ml import NodePreprocessing, train_pipeline
+from autoscraper.util import (
     get_common_ancestor_for_paths,
     get_common_ancestor_for_nodes,
     get_tree_path,
