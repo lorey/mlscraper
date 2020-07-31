@@ -132,6 +132,9 @@ def generate_path_selectors(node):
     Generate all possible selectors for this specific node
     :return:
     """
+    if not isinstance(node, Tag):
+        error_msg = "Only tags can be selected with CSS, %s given" % type(node)
+        raise RuntimeError(error_msg)
 
     # we have a list of n ancestor notes and n-1 nodes including the last node
     # the last node must get selected always

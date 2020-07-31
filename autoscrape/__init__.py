@@ -43,8 +43,15 @@ class SingleItemScraper:
             matches_per_item = {}
             for key in sample.data.keys():
                 value_to_search = sample.data[key]
+
+                # currently, we can only find strings with .text extraction
                 assert isinstance(value_to_search, str), "Only strings supported"
-                matches_per_item[key] = soup.find_all(text=value_to_search)
+
+                # search for text, check if parent returns this text
+                text_matches = soup.find_all(text=value_to_search)
+                text_parents = (ns.parent for ns in text_matches)
+                tag_matches = [p for p in text_parents if p.text == value_to_search]
+                matches_per_item[key] = tag_matches
             matches.append(matches_per_item)
         print(matches)
 
@@ -106,7 +113,8 @@ class SingleItemScraper:
 
             # use if probability > threshold
             if best_match["is_target"] > self.min_match_proba:
-                data[attr] = best_match["node"]
+                # todo apply extractor based on attribute (.text, attrs[href], etc.)
+                data[attr] = best_match["node"].text
             else:
                 logging.warning(
                     "%s not found in html, probability %f < %f",
