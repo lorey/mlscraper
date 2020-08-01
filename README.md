@@ -1,4 +1,11 @@
-# Scrape HTML automatically with autoscrape
+# Turn HTML intro structured data automatically with Machine Learning
+![How it works](.github/how-it-works.png)
+
+`autoscraper` allows you to extract structured data from HTML automatically with Machine Learning.
+You train it by providing a few examples of your desired output.
+It will then be able to extract this information from any new page you provide.
+
+## Background Story
 Many services for crawling and scraping automation allow you to select data in a browser and get JSON results in return.
 No need to specify CSS selectors or anything else.
 
@@ -6,7 +13,7 @@ I've been wondering for a long time why there's no Open Source solution that doe
 So here's my attempt at creating a python library to enable automatic scraping.
 
 All you have to do is define some examples of scraped data.
-autoscrape will figure out everything else and return clean data.
+`autoscraper` will figure out everything else and return clean data.
 
 Currently, this is a proof of concept with a simplistic solution.
 
@@ -33,6 +40,9 @@ scraper.scrape(training_html)  # will produce the items above
 scraper.scrape(new_html)  # will apply the learned rules and extract new items
 ```
 
+## Getting started
+Install the library locally via `pip install -e .`.
+You can then import it via `autoscraper` and use it as shown in the examples.
 
 ## Related work
 If you're interested in the underlying research, I can highly recommend these publications:
