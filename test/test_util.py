@@ -24,7 +24,7 @@ def test_generate_path_selectors(basic_soup):
 
     # test that output contains specific selectors
     # assert '#sample' in selectors
-    assert "div.wrapper > div" in selectors
+    assert "div.wrapper > div" in list(selectors)
 
     for css_sel in selectors:
         assert basic_soup.select(css_sel)
