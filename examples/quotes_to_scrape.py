@@ -1,6 +1,6 @@
 import requests
 
-from autoscraper import SingleItemSample, SingleItemScraper
+from mlscraper import SingleItemSample, SingleItemScraper
 
 
 def main():

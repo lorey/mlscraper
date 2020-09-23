@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 from pytest import fixture
 
-from autoscraper.util import generate_path_selectors, generate_unique_path_selectors
+from mlscraper.util import generate_path_selectors, generate_unique_path_selectors
 
 
 @fixture

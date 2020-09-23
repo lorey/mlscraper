@@ -3,7 +3,7 @@ import os
 import pytest
 from bs4 import BeautifulSoup
 
-from autoscraper import (
+from mlscraper import (
     MultiItemScraper,
     MultiItemSamples,
     SingleItemScraper,
