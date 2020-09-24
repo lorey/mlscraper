@@ -1,9 +1,11 @@
+import logging
+
 import pandas as pd
 from sklearn.base import TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier
 
-from mlscraper.util import generate_unique_path_selectors
+from mlscraper.util import generate_unique_path_selectors, get_tree_path
 
 
 class NodePreprocessing(TransformerMixin):
@@ -22,20 +24,26 @@ class NodePreprocessing(TransformerMixin):
 
                 css_selectors |= set(generate_unique_path_selectors(node))
         self.css_selectors = css_selectors
+        logging.info("found %d css selectors" % len(css_selectors))
 
         return self
 
     def transform(self, X, y=None, **fit_params):
+        logging.info("starting transformation (%d nodes)" % len(X))
+
         # create basic df
         df = pd.DataFrame(X, columns=["node"])
 
-        def is_selector_match(selector, node):
-            root = list(node.parents)[0]
-            return node in root.select(selector)
+        def get_root(node):
+            return get_tree_path(node)[-1]
 
-        for css_selector in self.css_selectors:
+        # so we basically want to know which nodes match the selectors
+        # the problem is that hashing takes very long in bs4
+
+        for i, css_selector in enumerate(self.css_selectors):
+            logging.info("Selector %d/%d" % (i, len(self.css_selectors)))
             col = "select: %s" % css_selector
-            df[col] = df["node"].apply(lambda n: is_selector_match(css_selector, n))
+            df[col] = df["node"].apply(lambda n: n in get_root(n).select(css_selector))
 
         return df[[c for c in df.columns if c not in ["node"]]]
 

@@ -55,7 +55,7 @@ class SingleItemScraper:
                 tag_matches = [p for p in text_parents if extract_text(p) == needle]
                 matches_per_item[key] = tag_matches
             matches.append(matches_per_item)
-        print(matches)
+        # print(matches)
 
         matches_unique = []
         for matches_item, sample in zip(matches, samples):
@@ -70,7 +70,7 @@ class SingleItemScraper:
                     % (sample, matches_item)
                 )
                 matches_unique.append(None)
-        print(matches_unique)
+        # print(matches_unique)
 
         # for each attribute:
         attributes = set(flatten(sample.data.keys() for sample in samples))
@@ -82,13 +82,25 @@ class SingleItemScraper:
             # 2. mark nodes that match sample as true, others as false
             training_data = []
             for matches_item, soup in zip(matches_unique, soups):
-                node_to_find = matches_item[attr]
-                training_data.extend(
-                    [(node, node == node_to_find) for node in soup.descendants]
-                )
+                if matches_item:
+                    node_to_find = matches_item[attr]
+                    training_data.extend(
+                        [(node, node == node_to_find) for node in soup.descendants]
+                    )
+                else:
+                    logging.warning("Skipping one sample for %s" % attr)
 
             # 3. train classifier
-            pipeline = train_pipeline(*zip(*training_data))
+            df = pd.DataFrame(training_data, columns=["node", "target"])
+            if len(df[df['target'] == False]) > 100:
+                df_train = pd.concat(
+                    [df[df["target"] == True], df[df["target"] == False].sample(frac=0.01)]
+                )
+            else:
+                df_train = df
+
+            pipeline = train_pipeline(df_train["node"], df_train["target"])
+            # pipeline = train_pipeline(df["node"], df["target"])
             classifiers[attr] = pipeline
 
         return SingleItemScraper(classifiers)
@@ -101,7 +113,7 @@ class SingleItemScraper:
 
         for attr in self.classifiers.keys():
             # predict proba of all nodes
-            node_predictions = self.classifiers[attr].predict_proba(soup.descendants)
+            node_predictions = self.classifiers[attr].predict_proba(list(soup.descendants))
 
             # turn it into a data frame
             df = pd.DataFrame(node_predictions, columns=["is_noise", "is_target"])
