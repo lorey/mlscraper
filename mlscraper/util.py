@@ -1,6 +1,6 @@
 import logging
 from collections import namedtuple
-from itertools import combinations, product, permutations
+from itertools import combinations, product
 from statistics import mean
 
 from bs4 import Tag

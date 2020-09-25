@@ -1,15 +1,5 @@
 # training objects
-from mlscraper.parser import Page, Node
-
-
-class ExtractionResult:
-    """Specific result found on a page"""
-
-    node = None
-    # extraction_method = None
-
-    def __init__(self, node: Node):
-        self.node = node
+from mlscraper.parser import Page
 
 
 class MultiItemPageSample:
