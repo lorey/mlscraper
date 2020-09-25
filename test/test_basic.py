@@ -1,7 +1,6 @@
 import os
 
 import pytest
-from bs4 import BeautifulSoup
 
 from mlscraper import (
     MultiItemScraper,

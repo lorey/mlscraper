@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from more_itertools import flatten
 
 from mlscraper.ml import NodePreprocessing, train_pipeline
+from mlscraper.training import SingleItemPageSample
 from mlscraper.util import (
     get_common_ancestor_for_paths,
     get_common_ancestor_for_nodes,
@@ -15,10 +16,64 @@ from mlscraper.util import (
     generate_css_selectors_for_node,
     get_selectors,
     derive_css_selector,
+    generate_path_selectors,
 )
 
 SingleItemSample = namedtuple("SingleItemSample", ["data", "html"])
 MultiItemSamples = namedtuple("MultiItemSamples", ["data", "html"])
+
+
+class RuleBasedSingleItemScraper:
+    def __init__(self, classes_per_attr):
+        self.classes_per_attr = classes_per_attr
+
+    @staticmethod
+    def build(samples: List[SingleItemPageSample]):
+        attributes = flatten(s.item.keys() for s in samples)
+
+        rules = {}  # attr -> selector
+        for attr in attributes:
+            selector_scoring = {}  # selector -> score
+
+            # for all potential selectors
+            for sample in samples:
+                soup_node = sample.item[attr].node._soup_node
+                for css_selector in generate_path_selectors(soup_node):
+                    # check if selector matches the desired sample on each page
+                    # todo avoid doing it over and over for each sample
+                    sample_nodes = set(s.item[attr].node for s in samples)
+                    matches = set(
+                        flatten([s.page.select(css_selector) for s in samples])
+                    )
+                    score = len(sample_nodes.intersection(matches)) / len(
+                        sample_nodes.union(matches)
+                    )
+                    selector_scoring[css_selector] = score
+
+            # find the selector with the best coverage, i.e. the highest accuracy
+            print("Scoring: %s" % selector_scoring)
+            selectors_sorted = sorted(
+                selector_scoring, key=selector_scoring.get, reverse=True
+            )
+            print(selectors_sorted)
+            selector_best = selectors_sorted[0]
+            if selector_scoring[selector_best] < 1:
+                logging.warning(
+                    "Selector does not work for all samples (score is %f)"
+                    % selector_scoring[selector_best]
+                )
+
+            rules[attr] = selector_best
+        print(rules)
+        return RuleBasedSingleItemScraper(rules)
+
+    def scrape(self, html):
+        soup = BeautifulSoup(html, "lxml")
+        item = {
+            k: soup.select(self.classes_per_attr[k])[0].text
+            for k in self.classes_per_attr.keys()
+        }
+        return item
 
 
 class SingleItemScraper:
@@ -92,9 +147,12 @@ class SingleItemScraper:
 
             # 3. train classifier
             df = pd.DataFrame(training_data, columns=["node", "target"])
-            if len(df[df['target'] == False]) > 100:
+            if len(df[df["target"] == False]) > 100:
                 df_train = pd.concat(
-                    [df[df["target"] == True], df[df["target"] == False].sample(frac=0.01)]
+                    [
+                        df[df["target"] == True],
+                        df[df["target"] == False].sample(frac=0.01),
+                    ]
                 )
             else:
                 df_train = df
@@ -111,15 +169,16 @@ class SingleItemScraper:
         # data is a dict, because page is one item
         data = {}
 
+        nodes = list(soup.descendants)
         for attr in self.classifiers.keys():
             # predict proba of all nodes
-            node_predictions = self.classifiers[attr].predict_proba(list(soup.descendants))
+            node_predictions = self.classifiers[attr].predict_proba(nodes)
 
             # turn it into a data frame
             df = pd.DataFrame(node_predictions, columns=["is_noise", "is_target"])
 
             # re-add nodes to extract them later
-            df["node"] = pd.Series(soup.descendants)
+            df["node"] = pd.Series(nodes)
 
             # get best match
             df_nodes_by_proba = df.sort_values("is_target", ascending=False)
