@@ -24,15 +24,18 @@ MultiItemSamples = namedtuple("MultiItemSamples", ["data", "html"])
 
 
 class RuleBasedSingleItemScraper:
+    """A simple scraper that will simply try to infer the best css selectors."""
+
     def __init__(self, classes_per_attr):
         self.classes_per_attr = classes_per_attr
 
     @staticmethod
     def build(samples: List[SingleItemPageSample]):
-        attributes = flatten(s.item.keys() for s in samples)
+        attributes = set(flatten(s.item.keys() for s in samples))
 
         rules = {}  # attr -> selector
         for attr in attributes:
+            logging.debug("Training attribute %s")
             selector_scoring = {}  # selector -> score
 
             # for all potential selectors
