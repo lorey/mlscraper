@@ -58,4 +58,4 @@ def test_generate_unique_path_selectors(basic_soup):
 
     assert ".wrapper.box > div" not in selectors
     assert "div > div" not in selectors
-    # assert "#sample" in selectors
+    assert "#sample" in selectors

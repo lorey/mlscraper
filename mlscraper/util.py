@@ -46,9 +46,9 @@ def get_tree_path(node):
 
 
 def generate_css_selectors_for_node(node: Tag, max_classes_per_node=None):
-    tag_id = node.attrs.get('id', None)
+    tag_id = node.attrs.get("id", None)
     if tag_id:
-        yield '#' + tag_id
+        yield "#" + tag_id
 
     css_classes = node.attrs.get("class", [])
     css_class_combos = filter(
