@@ -169,7 +169,8 @@ def generate_path_selectors(node):
             # make a list of selector generators for each node in the path
             # todo limit generated selectors -> huge product
             selector_generators_for_each_path_node = [
-                generate_css_selectors_for_node(n, max_classes_per_node=1) for n in path_sampled
+                generate_css_selectors_for_node(n, max_classes_per_node=2)
+                for n in path_sampled
             ]
 
             # generator that outputs selector paths

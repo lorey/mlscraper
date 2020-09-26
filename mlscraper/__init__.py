@@ -1,4 +1,5 @@
 import logging
+import random
 import re
 from collections import Counter, namedtuple
 from typing import List
@@ -8,6 +9,7 @@ from bs4 import BeautifulSoup
 from more_itertools import flatten
 
 from mlscraper.ml import NodePreprocessing, train_pipeline
+from mlscraper.parser import make_soup_page, ExtractionResult
 from mlscraper.training import SingleItemPageSample
 from mlscraper.util import (
     get_common_ancestor_for_paths,
@@ -23,6 +25,35 @@ SingleItemSample = namedtuple("SingleItemSample", ["data", "html"])
 MultiItemSamples = namedtuple("MultiItemSamples", ["data", "html"])
 
 
+def create_single_item_samples(url_to_item):
+    """
+    Creates single page training data for you.
+
+    :param url_to_item: dict with url as key and expected dict as value
+    :return: samples
+    """
+    import requests
+
+    results = {url: requests.get(url) for url in url_to_item.keys()}
+    assert all(resp.status_code == 200 for resp in results.values())
+
+    pages = {url: make_soup_page(results[url].content) for url in url_to_item.keys()}
+
+    # train scraper
+    samples = []
+    for url in url_to_item:
+        page = pages[url]
+        item = url_to_item[url]
+
+        # use random sample if found several times to try to get all possible selectors
+        item_extraction = {
+            k: ExtractionResult(random.choice(page.find(v))) for k, v in item.items()
+        }
+        sample = SingleItemPageSample(page, item_extraction)
+        samples.append(sample)
+    return samples
+
+
 class RuleBasedSingleItemScraper:
     """A simple scraper that will simply try to infer the best css selectors."""
 
@@ -35,7 +66,7 @@ class RuleBasedSingleItemScraper:
 
         rules = {}  # attr -> selector
         for attr in attributes:
-            logging.debug("Training attribute %s")
+            logging.info("Training attribute %s")
             selector_scoring = {}  # selector -> score
 
             # for all potential selectors
@@ -62,8 +93,8 @@ class RuleBasedSingleItemScraper:
             selector_best = selectors_sorted[0]
             if selector_scoring[selector_best] < 1:
                 logging.warning(
-                    "Selector does not work for all samples (score is %f)"
-                    % selector_scoring[selector_best]
+                    "Best selector for %s does not work for all samples (score is %f)"
+                    % (attr, selector_scoring[selector_best])
                 )
 
             rules[attr] = selector_best
@@ -71,9 +102,9 @@ class RuleBasedSingleItemScraper:
         return RuleBasedSingleItemScraper(rules)
 
     def scrape(self, html):
-        soup = BeautifulSoup(html, "lxml")
+        page = make_soup_page(html)
         item = {
-            k: soup.select(self.classes_per_attr[k])[0].text
+            k: page.select(self.classes_per_attr[k])[0].get_text()
             for k in self.classes_per_attr.keys()
         }
         return item

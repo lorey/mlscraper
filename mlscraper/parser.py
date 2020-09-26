@@ -29,7 +29,9 @@ class SoupPage(Page):
         try:
             return [SoupNode(res) for res in self._soup.select(css_selector)]
         except NotImplementedError:
-            logging.warning("ignoring selector %s: not implemented by BS4" % css_selector)
+            logging.warning(
+                "ignoring selector %s: not implemented by BS4" % css_selector
+            )
             return []
 
     def find(self, needle):
@@ -42,7 +44,7 @@ class SoupPage(Page):
 
 
 def extract_soup_text(tag: Tag):
-    return tag.text
+    return tag.text.strip()
 
 
 class SoupNode(Node):
@@ -56,6 +58,9 @@ class SoupNode(Node):
 
     def __hash__(self):
         return self._soup_node.__hash__()
+
+    def get_text(self):
+        return extract_soup_text(self._soup_node)
 
 
 def make_soup_page(html):
