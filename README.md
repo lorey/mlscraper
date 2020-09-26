@@ -26,7 +26,6 @@ After you've defined the data you want to scrape, mlscraper will:
 
 ```python
 from mlscraper import MultiItemScraper
-from mlscraper.parser import make_soup_page
 from mlscraper.training import MultiItemPageSample
 
 # the items found on the training page
@@ -37,7 +36,7 @@ items = [
 ]
 
 # training the scraper with the items
-sample = MultiItemPageSample(make_soup_page(html), items)
+sample = MultiItemPageSample(html, items)
 scraper = MultiItemScraper.build([sample])
 scraper.scrape(html)  # will produce the items above
 scraper.scrape(new_html)  # will apply the learned rules and extract new items
