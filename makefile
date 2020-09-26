@@ -5,4 +5,4 @@
 all: test
 
 test:
-> python -m pytest
+> python -m pytest --log-level=10
