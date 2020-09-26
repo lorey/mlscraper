@@ -69,22 +69,19 @@ class RuleBasedSingleItemScraper:
 
             # get all potential matches
             matching_nodes = flatten([s.page.find(s.item[attr]) for s in samples])
-            selectors = set(
-                chain(
-                    *(
-                        generate_unique_path_selectors(node._soup_node)
-                        for node in matching_nodes
-                    )
-                )
+            # since uniqueness requires selection over and over, we don't use generate_unique_path... here
+            path_selector_generator = (
+                generate_path_selectors(node._soup_node) for node in matching_nodes
             )
+            selectors = set(chain(*path_selector_generator))
 
             # check if they are unique on every page
             # -> for all potential selectors: compute score
             selector_scoring = {}  # selector -> score
-            for selector in selectors:
+            for i, selector in enumerate(selectors):
                 if selector not in selector_scoring:
-                    logging.info("testing %s" % selector)
-                    matches_per_page = [s.page.select(selector) for s in samples]
+                    logging.info("testing %s (%d/%d)", selector, i, len(selectors))
+                    matches_per_page = (s.page.select(selector) for s in samples)
                     matches_per_page_right = [
                         len(m) == 1 and m[0].get_text() == s.item[attr]
                         for m, s in zip(matches_per_page, samples)
@@ -94,12 +91,13 @@ class RuleBasedSingleItemScraper:
 
             # find the selector with the best coverage, i.e. the highest accuracy
             logging.info("Scoring for %s: %s", attr, selector_scoring)
+            # sort by score (desc) and selector length (asc)
             selectors_sorted = sorted(
-                selector_scoring, key=selector_scoring.get, reverse=True
+                selector_scoring.items(), key=lambda x: (x[1], -len(x[0])), reverse=True
             )
             logging.info("Best scores for %s: %s", attr, selectors_sorted[:3])
             try:
-                selector_best = selectors_sorted[0]
+                selector_best = selectors_sorted[0][0]
                 if selector_scoring[selector_best] < 1:
                     logging.warning(
                         "Best selector for %s does not work for all samples (score is %f)"
