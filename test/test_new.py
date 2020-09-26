@@ -1,5 +1,5 @@
 from mlscraper import RuleBasedSingleItemScraper, SingleItemPageSample
-from mlscraper.parser import make_soup_page, ExtractionResult
+from mlscraper.parser import make_soup_page
 
 
 def test_basic():

@@ -1,7 +1,11 @@
 from bs4 import BeautifulSoup
 from pytest import fixture
 
-from mlscraper.util import generate_path_selectors, generate_unique_path_selectors
+from mlscraper.util import (
+    generate_path_selectors,
+    generate_unique_path_selectors,
+    generate_css_selectors_for_node,
+)
 
 
 @fixture
@@ -16,6 +20,18 @@ def basic_soup():
         </body></html>"""
     soup = BeautifulSoup(html, "lxml")
     return soup
+
+
+def test_generate_css_selectors_for_node(basic_soup):
+    node = basic_soup.select("#sample")[0]
+    selectors = generate_css_selectors_for_node(node)
+    assert "#sample" in list(selectors)
+
+
+def test_generate_css_selectors_for_node_edge_case(basic_soup):
+    node = basic_soup.select("html")[0]
+    selectors = generate_css_selectors_for_node(node)
+    assert ":nth-of-type(1)" not in list(selectors)
 
 
 def test_generate_path_selectors(basic_soup):

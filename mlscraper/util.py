@@ -46,6 +46,10 @@ def get_tree_path(node):
 
 
 def generate_css_selectors_for_node(node: Tag, max_classes_per_node=None):
+    tag_id = node.attrs.get('id', None)
+    if tag_id:
+        yield '#' + tag_id
+
     css_classes = node.attrs.get("class", [])
     css_class_combos = filter(
         lambda ccc: max_classes_per_node is None or len(ccc) <= max_classes_per_node,
@@ -57,6 +61,15 @@ def generate_css_selectors_for_node(node: Tag, max_classes_per_node=None):
         )
         css_selector = node.name + css_clases_str
         yield css_selector
+
+    if type(node.parent) == Tag and hasattr(node, "name"):
+        children_tags = [c for c in node.parent.children if type(c) == Tag]
+        child_index = list(children_tags).index(node) + 1
+        yield ":nth-child(%d)" % child_index
+
+        children_of_same_type = [c for c in children_tags if c.name == node.name]
+        child_index = children_of_same_type.index(node) + 1
+        yield ":nth-of-type(%d)" % child_index
 
     # todo yield all combination of nodes with all combinations of selectors
 

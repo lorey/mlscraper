@@ -28,7 +28,7 @@ def multi_single_result_page_html():
 
 
 @pytest.fixture
-def basic_html():
+def whitespace_html():
     html = b""""
     <html><body>
     <div>
@@ -65,11 +65,11 @@ def test_single(single_basic_train_html):
     assert result == data
 
 
-def test_single_with_whitespace(basic_html):
+def test_single_with_whitespace(whitespace_html):
     data = {"name": "Peter", "description": "Cool-looking guy"}
-    samples = [SingleItemSample(data, basic_html)]
+    samples = [SingleItemSample(data, whitespace_html)]
     scraper = SingleItemScraper.build(samples)
     result = scraper.scrape(
         b'<html><body><div><div class="person-name">Klaus</div></div></body></html>'
     )
-    assert result["name"] == "Klaus"
+    assert result == {"name": "Klaus"}
