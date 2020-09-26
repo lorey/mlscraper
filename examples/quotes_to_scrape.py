@@ -1,6 +1,6 @@
 import requests
 
-from mlscraper import SingleItemSample, SingleItemScraper
+from mlscraper import SingleItemScraper, SingleItemPageSample
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
 
     # train scraper
     samples = [
-        SingleItemSample(items[url], results[url].content) for url in items.keys()
+        SingleItemPageSample(results[url].content, items[url]) for url in items.keys()
     ]
     scraper = SingleItemScraper.build(samples)
 
