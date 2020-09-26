@@ -2,6 +2,7 @@ import logging
 import random
 import re
 from collections import Counter, namedtuple
+from itertools import chain
 from typing import List
 
 import pandas as pd
@@ -19,6 +20,7 @@ from mlscraper.util import (
     get_selectors,
     derive_css_selector,
     generate_path_selectors,
+    generate_unique_path_selectors,
 )
 
 SingleItemSample = namedtuple("SingleItemSample", ["data", "html"])
@@ -66,38 +68,50 @@ class RuleBasedSingleItemScraper:
 
         rules = {}  # attr -> selector
         for attr in attributes:
-            logging.info("Training attribute %s")
-            selector_scoring = {}  # selector -> score
+            logging.info("Training attribute %s" % attr)
 
-            # for all potential selectors
-            for sample in samples:
-                soup_node = sample.item[attr].node._soup_node
-                for css_selector in generate_path_selectors(soup_node):
-                    # check if selector matches the desired sample on each page
-                    # todo avoid doing it over and over for each sample
-                    sample_nodes = set(s.item[attr].node for s in samples)
-                    matches = set(
-                        flatten([s.page.select(css_selector) for s in samples])
+            # get all potential matches
+            matching_nodes = flatten([s.page.find(s.item[attr]) for s in samples])
+            selectors = set(
+                chain(
+                    *(
+                        generate_unique_path_selectors(node._soup_node)
+                        for node in matching_nodes
                     )
-                    score = len(sample_nodes.intersection(matches)) / len(
-                        sample_nodes.union(matches)
-                    )
-                    selector_scoring[css_selector] = score
+                )
+            )
+
+            # check if they are unique on every page
+            # -> for all potential selectors: compute score
+            selector_scoring = {}  # selector -> score
+            for selector in selectors:
+                if selector not in selector_scoring:
+                    logging.info("testing %s" % selector)
+                    matches_per_page = [s.page.select(selector) for s in samples]
+                    matches_per_page_right = [
+                        len(m) == 1 and m[0].get_text() == s.item[attr]
+                        for m, s in zip(matches_per_page, samples)
+                    ]
+                    score = sum(matches_per_page_right) / len(samples)
+                    selector_scoring[selector] = score
 
             # find the selector with the best coverage, i.e. the highest accuracy
-            print("Scoring: %s" % selector_scoring)
+            logging.info("Scoring for %s: %s", attr, selector_scoring)
             selectors_sorted = sorted(
                 selector_scoring, key=selector_scoring.get, reverse=True
             )
-            print(selectors_sorted)
-            selector_best = selectors_sorted[0]
-            if selector_scoring[selector_best] < 1:
-                logging.warning(
-                    "Best selector for %s does not work for all samples (score is %f)"
-                    % (attr, selector_scoring[selector_best])
-                )
+            logging.info("Best scores for %s: %s", attr, selectors_sorted[:3])
+            try:
+                selector_best = selectors_sorted[0]
+                if selector_scoring[selector_best] < 1:
+                    logging.warning(
+                        "Best selector for %s does not work for all samples (score is %f)"
+                        % (attr, selector_scoring[selector_best])
+                    )
 
-            rules[attr] = selector_best
+                rules[attr] = selector_best
+            except IndexError:
+                logging.warning("No selector found for %s", attr)
         print(rules)
         return RuleBasedSingleItemScraper(rules)
 

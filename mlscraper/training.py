@@ -22,3 +22,7 @@ class SingleItemPageSample:
     def __init__(self, page: Page, item: dict):
         self.page = page
         self.item = item
+
+    def find_nodes(self, attr):
+        needle = self.item[attr]
+        return self.page.find(needle)

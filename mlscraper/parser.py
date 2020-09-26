@@ -35,7 +35,7 @@ class SoupPage(Page):
             return []
 
     def find(self, needle):
-        assert type(needle) == str, "can only find strings ATM"
+        assert type(needle) == str, "can only find strings, %s given" % type(needle)
         text_matches = self._soup.find_all(text=re.compile(needle))
         logging.debug("Matches for %s: %s", needle, text_matches)
         text_parents = (ns.parent for ns in text_matches)
