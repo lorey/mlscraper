@@ -11,7 +11,7 @@ from more_itertools import flatten
 
 from mlscraper.ml import NodePreprocessing, train_pipeline
 from mlscraper.parser import make_soup_page, ExtractionResult
-from mlscraper.training import SingleItemPageSample
+from mlscraper.training import SingleItemPageSample, MultiItemPageSample
 from mlscraper.util import (
     get_common_ancestor_for_paths,
     get_common_ancestor_for_nodes,
@@ -22,9 +22,6 @@ from mlscraper.util import (
     generate_path_selectors,
     generate_unique_path_selectors,
 )
-
-SingleItemSample = namedtuple("SingleItemSample", ["data", "html"])
-MultiItemSamples = namedtuple("MultiItemSamples", ["data", "html"])
 
 
 def create_single_item_samples(url_to_item):
@@ -130,7 +127,7 @@ class SingleItemScraper:
         self.min_match_proba = min_match_proba
 
     @staticmethod
-    def build(samples: List[SingleItemSample]):
+    def build(samples: List[SingleItemPageSample]):
         """
         Build a scraper by inferring rules.
 
@@ -139,14 +136,14 @@ class SingleItemScraper:
         """
 
         # parse html
-        soups = [BeautifulSoup(sample.html, "lxml") for sample in samples]
+        soups = [sample.page._soup for sample in samples]
 
         # find samples on the pages
         matches = []
         for sample, soup in zip(samples, soups):
             matches_per_item = {}
-            for key in sample.data.keys():
-                needle = sample.data[key]
+            for key in sample.item.keys():
+                needle = sample.item[key]
 
                 # currently, we can only find strings with .text extraction
                 assert isinstance(needle, str), "Only strings supported"
@@ -162,9 +159,9 @@ class SingleItemScraper:
 
         matches_unique = []
         for matches_item, sample in zip(matches, samples):
-            if all(len(matches_item[attr]) == 1 for attr in sample.data.keys()):
+            if all(len(matches_item[attr]) == 1 for attr in sample.item.keys()):
                 matches_item_unique = {
-                    attr: matches_item[attr][0] for attr in sample.data.keys()
+                    attr: matches_item[attr][0] for attr in sample.item.keys()
                 }
                 matches_unique.append(matches_item_unique)
             else:
@@ -176,7 +173,7 @@ class SingleItemScraper:
         # print(matches_unique)
 
         # for each attribute:
-        attributes = set(flatten(sample.data.keys() for sample in samples))
+        attributes = set(flatten(sample.item.keys() for sample in samples))
         print(attributes)
         classifiers = {}
         for attr in attributes:
@@ -261,13 +258,13 @@ class MultiItemScraper:
         self.value_selectors = value_selectors
 
     @staticmethod
-    def build(samples: MultiItemSamples):
+    def build(samples: List[MultiItemPageSample]):
         """
         Build the scraper by inferring rules.
         """
+        assert len(samples) == 1, "can only train with one sample"
 
-        html = samples.html
-        items = samples.data
+        items = samples[0].items
 
         # observation:
         # - if multiple common distinctive ancestors exist,
@@ -284,7 +281,7 @@ class MultiItemScraper:
         # glossary
         # - ancestors: the path of elements in the DOM from root to a specific element
 
-        soup = BeautifulSoup(html, "lxml")
+        soup = samples[0].page._soup
 
         # 1. find all examples on the site
         matches = []

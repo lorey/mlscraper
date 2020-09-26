@@ -4,9 +4,10 @@ import pytest
 
 from mlscraper import (
     MultiItemScraper,
-    MultiItemSamples,
     SingleItemScraper,
-    SingleItemSample,
+    MultiItemPageSample,
+    make_soup_page,
+    SingleItemPageSample,
 )
 
 
@@ -49,7 +50,7 @@ def test_multi(multi_single_result_page_html):
     ]
 
     html = multi_single_result_page_html
-    scraper = MultiItemScraper.build(MultiItemSamples(items, html))
+    scraper = MultiItemScraper.build([MultiItemPageSample(make_soup_page(html), items)])
     assert scraper.scrape(html) == items
 
     # optional since they're only human guesses
@@ -59,7 +60,7 @@ def test_multi(multi_single_result_page_html):
 
 def test_single(single_basic_train_html):
     data = {"name": "Peter", "description": "Cool-looking guy"}
-    samples = [SingleItemSample(data, single_basic_train_html)]
+    samples = [SingleItemPageSample(make_soup_page(single_basic_train_html), data)]
     scraper = SingleItemScraper.build(samples)
     result = scraper.scrape(single_basic_train_html)
     assert result == data
@@ -67,7 +68,7 @@ def test_single(single_basic_train_html):
 
 def test_single_with_whitespace(whitespace_html):
     data = {"name": "Peter", "description": "Cool-looking guy"}
-    samples = [SingleItemSample(data, whitespace_html)]
+    samples = [SingleItemPageSample(make_soup_page(whitespace_html), data)]
     scraper = SingleItemScraper.build(samples)
     result = scraper.scrape(
         b'<html><body><div><div class="person-name">Klaus</div></div></body></html>'
