@@ -9,6 +9,9 @@ Turn HTML intro structured data automatically with Machine Learning with mlscrap
 You train it by providing a few examples of your desired output.
 It will then be able to extract this information from any new page you provide.
 
+.. image:: https://img.shields.io/travis/lorey/mlscraper   :alt: Travis (.org)
+
+
 ----------------
 Background Story
 ----------------
