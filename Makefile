@@ -56,6 +56,10 @@ test: ## run tests quickly with the default Python
 test-all: ## run tests on every Python version with tox
 	tox
 
+test-dist: ## check if pypi will accept package (readme rendering, etc)
+	python setup.py sdist bdist_wheel
+	twine check dist/*
+
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source mlscraper -m pytest
 	coverage report -m
