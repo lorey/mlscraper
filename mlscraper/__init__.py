@@ -1,7 +1,11 @@
+__author__ = """Karl Lorey"""
+__email__ = "git@karllorey.com"
+__version__ = "0.1.0"
+
 import logging
 import random
 import re
-from collections import Counter, namedtuple
+from collections import Counter
 from itertools import chain
 from typing import List
 
