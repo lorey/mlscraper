@@ -12,6 +12,7 @@ with open("HISTORY.rst") as history_file:
 
 requirements = [
     "beautifulsoup4",
+    "lxml",
     "more-itertools>=8",
     "pandas",
     "requests",
