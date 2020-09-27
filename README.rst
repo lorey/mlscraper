@@ -4,13 +4,18 @@ Turn HTML intro structured data automatically with Machine Learning with mlscrap
 
 .. image:: .github/how-it-works.png
 
-
 `mlscraper` allows you to extract structured data from HTML automatically with Machine Learning.
 You train it by providing a few examples of your desired output.
 It will then be able to extract this information from any new page you provide.
 
 .. image:: https://img.shields.io/travis/lorey/mlscraper   :alt: Travis (.org)
+   :target: https://travis-ci.org/github/lorey/mlscraper
 
+.. image:: https://img.shields.io/pypi/v/mlscraper   :alt: PyPI
+   :target: https://pypi.org/project/mlscraper/
+
+.. image:: https://img.shields.io/pypi/pyversions/mlscraper   :alt: PyPI - Python Version
+   :target: https://pypi.org/project/mlscraper/
 
 ----------------
 Background Story
@@ -60,7 +65,7 @@ After you've defined the data you want to scrape, mlscraper will:
 Getting started
 ---------------
 
-Install the library locally via `pip install -e .`.
+Install the library via :code:`pip install mlscraper`.
 You can then import it via `mlscraper` and use it as shown in the examples.
 
 -----------
@@ -81,4 +86,6 @@ If you're interested in the underlying research, I can highly recommend these pu
 - WHISK: Extraction of structured and unstructured information: https://www.cis.uni-muenchen.de/~yeong/Kurse/ws0809/WebDataMining/whisk.pdf
 
 I originally called this autoscraper but while working on it someone else released a library named exactly the same.
-Check it out here: [autoscraper](https://github.com/alirezamika/autoscraper).
+Check it out here: autoscraper_.
+
+.. _autoscraper: https://github.com/alirezamika/autoscraper
