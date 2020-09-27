@@ -28,7 +28,7 @@ I've been wondering for a long time why there's no Open Source solution that doe
 So here's my attempt at creating a python library to enable automatic scraping.
 
 All you have to do is define some examples of scraped data.
-`autoscraper` will figure out everything else and return clean data.
+`mlscraper` will figure out everything else and return clean data.
 
 Currently, this is a proof of concept with a simplistic solution.
 
@@ -59,6 +59,10 @@ After you've defined the data you want to scrape, mlscraper will:
     scraper = MultiItemScraper.build([sample])
     scraper.scrape(html)  # will produce the items above
     scraper.scrape(new_html)  # will apply the learned rules and extract new items
+
+You can find working scrapers in the `examples folder`_.
+
+.. _`examples folder`: examples/
 
 
 ---------------
