@@ -45,21 +45,23 @@ After you've defined the data you want to scrape, mlscraper will:
 
 .. code:: python
 
+    import requests
+
     from mlscraper import RuleBasedSingleItemScraper
     from mlscraper.training import SingleItemPageSample
 
     # the items found on the training page
-    targets = [
+    targets = {
         "https://test.com/article/1": {"title": "One great result!", "description": "Some description"},
         "https://test.com/article/2": {"title": "Another great result!", "description": "Another description"},
         "https://test.com/article/3": {"title": "Result to be found", "description": "Description to crawl"},
-    ]
+    }
 
     # fetch html and create samples
     samples = [SingleItemPageSample(requests.get(url).content, targets[url]) for url in targets]
 
     # training the scraper with the items
-    scraper = MultiItemScraper.build([sample])
+    scraper = RuleBasedSingleItemScraper.build(samples)
 
     # apply the learned rules and extract new item automatically
     result = scraper.scrape(requests.get('https://test.com/article/4'))
