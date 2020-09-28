@@ -1,12 +1,6 @@
 ==================================================================================
-Turn HTML intro structured data automatically with Machine Learning with mlscraper
+mlscraper: Scrape data from HTML pages automatically with Machine Learning
 ==================================================================================
-
-.. image:: .github/how-it-works.png
-
-`mlscraper` allows you to extract structured data from HTML automatically with Machine Learning.
-You train it by providing a few examples of your desired output.
-It will then be able to extract this information from any new page you provide.
 
 .. image:: https://img.shields.io/travis/lorey/mlscraper   :alt: Travis (.org)
    :target: https://travis-ci.org/github/lorey/mlscraper
@@ -16,6 +10,13 @@ It will then be able to extract this information from any new page you provide.
 
 .. image:: https://img.shields.io/pypi/pyversions/mlscraper   :alt: PyPI - Python Version
    :target: https://pypi.org/project/mlscraper/
+
+`mlscraper` allows you to extract structured data from HTML automatically with Machine Learning.
+You train it by providing a few examples of your desired output.
+It will then figure out the extraction rules for you automatically
+and afterwards you'll be able to extract data from any new page you provide.
+
+.. image:: .github/how-it-works.png
 
 ----------------
 Background Story
