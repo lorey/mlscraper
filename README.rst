@@ -45,23 +45,30 @@ After you've defined the data you want to scrape, mlscraper will:
 
 .. code:: python
 
-    from mlscraper import MultiItemScraper
-    from mlscraper.training import MultiItemPageSample
+    from mlscraper import RuleBasedSingleItemScraper
+    from mlscraper.training import SingleItemPageSample
 
     # the items found on the training page
-    items = [
-        {"title": "One great result!", "description": "Some description"},
-        {"title": "Another great result!", "description": "Another description"},
-        {"title": "Result to be found", "description": "Description to crawl"},
+    targets = [
+        "https://test.com/article/1": {"title": "One great result!", "description": "Some description"},
+        "https://test.com/article/2": {"title": "Another great result!", "description": "Another description"},
+        "https://test.com/article/3": {"title": "Result to be found", "description": "Description to crawl"},
     ]
 
-    # training the scraper with the items
-    sample = MultiItemPageSample(html, items)
-    scraper = MultiItemScraper.build([sample])
-    scraper.scrape(html)  # will produce the items above
-    scraper.scrape(new_html)  # will apply the learned rules and extract new items
+    # fetch html and create samples
+    samples = [SingleItemPageSample(requests.get(url).content, targets[url]) for url in targets]
 
-You can find working scrapers in the `examples folder`_.
+    # training the scraper with the items
+    scraper = MultiItemScraper.build([sample])
+
+    # apply the learned rules and extract new item automatically
+    result = scraper.scrape(requests.get('https://test.com/article/4'))
+
+    print(result)
+    # results in something like:
+    # {'title': 'Article four', 'description': 'Scraped automatically'}
+
+You can find working scrapers like a stackoverflow and a quotes scraper in the `examples folder`_.
 
 .. _`examples folder`: examples/
 
