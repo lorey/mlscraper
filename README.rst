@@ -64,7 +64,7 @@ After you've defined the data you want to scrape, mlscraper will:
     scraper = RuleBasedSingleItemScraper.build(samples)
 
     # apply the learned rules and extract new item automatically
-    result = scraper.scrape(requests.get('https://test.com/article/4'))
+    result = scraper.scrape(requests.get('https://test.com/article/4').content)
 
     print(result)
     # results in something like:
