@@ -2,13 +2,13 @@
 mlscraper: Scrape data from HTML pages automatically with Machine Learning
 ==================================================================================
 
-.. image:: https://img.shields.io/travis/lorey/mlscraper   :alt: Travis (.org)
+.. image:: https://img.shields.io/travis/lorey/mlscraper?nocache   :alt: Travis (.org)
    :target: https://travis-ci.org/github/lorey/mlscraper
 
-.. image:: https://img.shields.io/pypi/v/mlscraper   :alt: PyPI
+.. image:: https://img.shields.io/pypi/v/mlscraper?nocache   :alt: PyPI
    :target: https://pypi.org/project/mlscraper/
 
-.. image:: https://img.shields.io/pypi/pyversions/mlscraper   :alt: PyPI - Python Version
+.. image:: https://img.shields.io/pypi/pyversions/mlscraper?nocache   :alt: PyPI - Python Version
    :target: https://pypi.org/project/mlscraper/
 
 `mlscraper` allows you to extract structured data from HTML automatically with Machine Learning.
