@@ -5,7 +5,7 @@ chardet==3.0.4
 idna==2.9
 importlib-metadata==1.6.1
 joblib==0.14.1
-lxml==4.5.1
+lxml==4.6.3
 more-itertools==8.3.0
 numpy==1.18.5
 packaging==20.4
