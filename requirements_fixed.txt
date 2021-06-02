@@ -23,6 +23,6 @@ scipy==1.4.1
 six==1.15.0
 sklearn-pandas==1.8.0
 soupsieve==2.0.1
-urllib3==1.25.9
+urllib3==1.26.5
 wcwidth==0.2.4
 zipp==1.2.0
