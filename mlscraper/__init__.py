@@ -1,3 +1,3 @@
-# create hierarchy for training
-# - for all items: find selectable object
-# - for all selectable objects: find path to other items
+__author__ = """Karl Lorey"""
+__email__ = "git@karllorey.com"
+__version__ = "0.1.2"

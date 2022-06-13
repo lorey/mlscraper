@@ -1,0 +1,39 @@
+name: Tests
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - master
+      - develop
+
+jobs:
+  tests:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: Linux, python: '3.10', os: ubuntu-latest, tox: py310}
+          - {name: Windows, python: '3.10', os: windows-latest, tox: py310}
+          - {name: Mac, python: '3.10', os: macos-latest, tox: py310}
+          - {name: '3.11-dev', python: '3.11-dev', os: ubuntu-latest, tox: py311}
+          - {name: '3.9', python: '3.9', os: ubuntu-latest, tox: py39}
+          - {name: '3.8', python: '3.8', os: ubuntu-latest, tox: py38}
+          - {name: '3.7', python: '3.7', os: ubuntu-latest, tox: py37}
+          - {name: 'PyPy', python: 'pypy-3.7', os: ubuntu-latest, tox: pypy37}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python }}
+      - name: update pip
+        run: |
+          pip install -U wheel
+          pip install -U setuptools
+          python -m pip install -U pip
+      - run: pip install tox
+      - run: tox -e ${{ matrix.tox }}

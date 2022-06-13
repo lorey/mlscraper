@@ -8,7 +8,6 @@ Welcome to mlscraper's documentation!
    readme
    installation
    usage
-   modules
    contributing
    authors
    history
