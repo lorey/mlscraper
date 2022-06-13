@@ -1,12 +1,11 @@
 import pytest
-
 from mlscraper.samples import Sample
 from mlscraper.util import Page
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def stackoverflow_samples():
-    with open("tests/static/so.html") as file:
+    with open("tests/static/so.html", "rb") as file:
         page = Page(file.read())
 
     item = [
