@@ -1,61 +1,55 @@
 from bs4 import BeautifulSoup
-from pytest import fixture
 
 from mlscraper.util import (
-    generate_path_selectors,
-    generate_unique_path_selectors,
-    generate_css_selectors_for_node,
+    AttributeValueExtractor,
+    Node,
+    Page,
+    _get_root_of_nodes,
+    get_attribute_extractor,
 )
 
 
-@fixture
-def basic_soup():
-    html = b"""<html><body>
-        <div class="wrapper box"><div>Rose are red, the ocean is blue, this div will get selected, too.</div></div>
-        <div class="main article">
-        <div class="test wrapper box">
-            <div id="sample">bla</div>
-        </div>
-        </div>
-        </body></html>"""
-    soup = BeautifulSoup(html, "lxml")
-    return soup
+class TestPage:
+    def test_something(self):
+        with open("tests/static/so.html") as file:
+            page = Page(file.read())
+        nodes = page.select(".answer .js-vote-count")
+        assert [n.text for n in nodes] == ["20", "16", "0"]
+
+    def test_find_all(self):
+        with open("tests/static/so.html") as file:
+            page = Page(file.read())
+        nodes = page.find_all("/users/624900/jterrace")
+        assert nodes
 
 
-def test_generate_css_selectors_for_node(basic_soup):
-    node = basic_soup.select("#sample")[0]
-    selectors = generate_css_selectors_for_node(node)
-    assert "#sample" in list(selectors)
+def test_attribute_extractor():
+    soup = BeautifulSoup(
+        '<html><body><a href="http://karllorey.com"></a><a>no link</a></body></html>',
+        "lxml",
+    )
+    ue = AttributeValueExtractor("href")
+    a_tags = soup.find_all("a")
+    assert ue.extract(Node(a_tags[0])) == "http://karllorey.com"
+    assert ue.extract(Node(a_tags[1])) is None
 
 
-def test_generate_css_selectors_for_node_edge_case(basic_soup):
-    node = basic_soup.select("html")[0]
-    selectors = generate_css_selectors_for_node(node)
-    assert ":nth-of-type(1)" not in list(selectors)
+def test_extractor_factory():
+    # we want to make sure that each extractor exists only once
+    # as we need this to ensure extractor selection
+    e1 = get_attribute_extractor("href")
+    e2 = get_attribute_extractor("href")
+    assert (
+        e1 is e2
+    ), "extractor factory return different instances for the same extractor"
 
 
-def test_generate_path_selectors(basic_soup):
-    node = basic_soup.select("#sample")[0]
-    selectors = generate_path_selectors(node)
-
-    # test that output contains specific selectors
-    # assert '#sample' in selectors
-    assert "div.wrapper > div" in list(selectors)
-
-    for css_sel in selectors:
-        assert basic_soup.select(css_sel)
-
-
-def test_generate_unique_path_selectors(basic_soup):
-    node = basic_soup.select("#sample")[0]
-    selectors = list(generate_unique_path_selectors(node))
-
-    # there are unique selectors
-    assert len(selectors) > 0
-
-    # all selectors must match exactly once (uniqueness)
-    assert all(len(basic_soup.select(css_sel)) == 1 for css_sel in selectors)
-
-    assert ".wrapper.box > div" not in selectors
-    assert "div > div" not in selectors
-    assert "#sample" in selectors
+def test_get_root_of_nodes():
+    soup = BeautifulSoup(
+        '<html><body><div><p id="one"></p><p><span id="two"></span></p></div></body></html>',
+        "lxml",
+    )
+    node_1 = soup.select_one("#one")
+    node_2 = soup.select_one("#two")
+    root = _get_root_of_nodes([node_1, node_2])
+    assert root == soup.select_one("div")

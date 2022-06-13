@@ -1,69 +1,328 @@
 import logging
-from collections import namedtuple
+import typing
 from itertools import combinations, product
-from statistics import mean
 
-from bs4 import Tag
-from more_itertools import powerset, flatten
+from bs4 import BeautifulSoup, Tag
+from more_itertools import powerset
 
+PARENT_NODE_COUNT_MAX = 2
+CSS_CLASS_COMBINATIONS_MAX = 2
 
-def get_common_ancestor_for_paths(paths):
-    # go through path one by one
-    # while len(set([paths[n][i] for n in range(len(paths))])) == 1:
-    ind = None
-    for i, nodes in enumerate(zip(*paths)):
-        # as long as all nodes are the same
-        # -> go deeper
-        # else break
-        if len(set(nodes)) != 1:
-            # return parent of mismatch
-            break
-
-        # set after as this remembers the last common index
-        ind = i
-
-    # if index is unset, even the first nodes didn't match
-    if ind is None:
-        raise RuntimeError("No common ancestor")
-
-    # as all nodes are the same, we can just use the first path
-    return paths[0][ind]
+extractor_instance_map = {}
+node_instance_map = {}
 
 
-def get_common_ancestor_for_nodes(nodes):
-    paths_of_nodes = [list(reversed(list(node.parents))) for node in nodes]
-    ancestor = get_common_ancestor_for_paths(paths_of_nodes)
-    return ancestor
+def get_text_extractor():
+    map_key = ("text",)
+    if map_key not in extractor_instance_map:
+        extractor_instance_map[map_key] = TextValueExtractor()
+    return extractor_instance_map[map_key]
 
 
-def get_tree_path(node):
+def get_attribute_extractor(attr):
+    map_key = ("attr", attr)
+    if map_key not in extractor_instance_map:
+        extractor_instance_map[map_key] = AttributeValueExtractor(attr)
+    return extractor_instance_map[map_key]
+
+
+def get_node_for_soup(soup):
+    # use id to avoid __hash__
+    soup_key = id(soup)
+
+    if soup_key not in node_instance_map:
+        node_instance_map[soup_key] = Node(soup)
+    return node_instance_map[soup_key]
+
+
+class Node:
+    soup = None
+
+    def __init__(self, soup):
+        self.soup = soup
+
+    def get_root(self):
+        root_soup = list(self.soup.parents)[-1]
+        return get_node_for_soup(root_soup)
+
+    def get_text(self):
+        return self.soup.text
+
+    text = property(get_text)
+
+    def find_all(self, item):
+        return list(self._generate_find_all(item))
+
+    def _generate_find_all(self, item):
+        assert isinstance(item, str)
+
+        # text
+        for soup_node in self.soup.find_all(text=item):
+            node = get_node_for_soup(soup_node.parent)
+            yield ValueMatch(node, get_text_extractor())
+
+        # attributes
+        for soup_node in self.soup.find_all():
+            for attr in soup_node.attrs:
+                if soup_node[attr] == item:
+                    node = get_node_for_soup(soup_node)
+                    yield ValueMatch(node, get_attribute_extractor(attr))
+
+        # todo implement other find methods
+
+    def generate_path_selectors(self):
+        """
+        Generate a selector for the path to the given node.
+        :return:
+        """
+        if not isinstance(self.soup, Tag):
+            error_msg = "Only tags can be selected with CSS, %s given" % type(self.soup)
+            raise RuntimeError(error_msg)
+
+        # we have a list of n ancestor notes and n-1 nodes including the last node
+        # the last node must get selected always
+
+        # so we will:
+        # 1) generate all selectors for current node
+        # 2) append possible selectors for the n-1 descendants
+        # starting with all node selectors and increasing number of used descendants
+
+        # remove unique parents as they don't improve selection
+        # body is unique, html is unique, document is bs4 root element
+        parents = [
+            n for n in self.soup.parents if n.name not in ("body", "html", "[document]")
+        ]
+        # print(parents)
+
+        # loop from i=0 to i=len(parents) as we consider all parents
+        parent_node_count_max = min(len(parents), PARENT_NODE_COUNT_MAX)
+        for parent_node_count in range(parent_node_count_max + 1):
+            logging.info(
+                "generating path selectors with %d parents" % parent_node_count
+            )
+            # generate paths with exactly parent_node_count nodes
+            for parent_nodes_sampled in combinations(parents, parent_node_count):
+                path_sampled = (self.soup,) + parent_nodes_sampled
+                # logging.info(path_sampled)
+
+                # make a list of selector generators for each node in the path
+                # todo limit generated selectors -> huge product
+                selector_generators_for_each_path_node = [
+                    generate_node_selector(n) for n in path_sampled
+                ]
+
+                # generator that outputs selector paths
+                # e.g. (div, .wrapper, .main)
+                path_sampled_selectors = product(
+                    *selector_generators_for_each_path_node
+                )
+
+                # create an actual css selector for each selector path
+                # e.g. .main > .wrapper > .div
+                for path_sampled_selector in path_sampled_selectors:
+                    # if paths are not directly connected, i.e. (1)-(2)-3-(4)
+                    #  join must be " " and not " > "
+                    css_selector = " ".join(reversed(path_sampled_selector))
+                    yield css_selector
+
+    def select(self, css_selector):
+        return [get_node_for_soup(n) for n in self.soup.select(css_selector)]
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}>"
+
+
+class Match:
     """
-    Return the path from current node to top as list
+    Occurrence of a specific sample on a page
+    """
+
+    def get_span(self) -> int:
+        raise NotImplementedError()
+
+    def get_root(self) -> Node:
+        raise NotImplementedError()
+
+
+class DictMatch(Match):
+    match_by_key = None
+
+    def __init__(self, match_by_key: dict):
+        self.match_by_key = match_by_key
+
+        soup_nodes = [m.get_root().soup for m in self.match_by_key.values()]
+        self.root = get_node_for_soup(_get_root_of_nodes(soup_nodes))
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {self.match_by_key=}>"
+
+    def get_root(self) -> Node:
+        return self.root
+
+    def get_span(self) -> int:
+        root = self.get_root()
+        return sum(
+            [get_relative_depth(m.get_root(), root) for m in self.match_by_key.values()]
+        )
+
+
+class ListMatch(Match):
+    matches = None
+
+    def __init__(self, matches: tuple):
+        self.matches = matches
+        self.root = get_node_for_soup(
+            _get_root_of_nodes([m.get_root().soup for m in self.matches])
+        )
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {self.matches=}>"
+
+    def get_root(self) -> Node:
+        return self.root
+
+    def get_span(self) -> int:
+        return sum(
+            [get_relative_depth(m.get_root(), self.get_root()) for m in self.matches]
+        )
+
+
+class ValueMatch(Match):
+    node = None
+    extractor = None
+
+    def __init__(self, node, extractor):
+        self.node = node
+        self.extractor = extractor
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {self.node=}, {self.extractor=}>"
+
+    def get_root(self) -> Node:
+        return self.node
+
+    def get_span(self) -> int:
+        return 0
+
+
+class Page(Node):
+    """
+    One page, i.e. one HTML document.
+    """
+
+    def __init__(self, html):
+        self.html = html
+        soup = BeautifulSoup(self.html, "lxml")
+        super().__init__(soup)
+
+
+class Extractor:
+    """
+    Class that extracts values from a node.
+    """
+
+    def extract(self, node: Node):
+        raise NotImplementedError()
+
+
+class TextValueExtractor(Extractor):
+    """
+    Class to extract text from a node.
+    """
+
+    def extract(self, node: Node):
+        return node.soup.text
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}>"
+
+
+class AttributeValueExtractor(Extractor):
+    attr = None
+
+    def __init__(self, attr):
+        self.attr = attr
+
+    def extract(self, node: Node):
+        if self.attr in node.soup.attrs:
+            return node.soup[self.attr]
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {self.attr=}>"
+
+
+class Selector:
+    """
+    Class to select nodes from another node.
+    """
+
+    def select_one(self, node: Node) -> Node:
+        raise NotImplementedError()
+
+    def select_all(self, node: Node) -> typing.List[Node]:
+        raise NotImplementedError()
+
+
+class Matcher:
+    """
+    Class that finds/selects nodes and extracts items from these nodes.
+    """
+
+    selector = None
+    extractor = None
+
+    def __init__(self, selector: Selector, extractor: Extractor):
+        self.selector = selector
+        self.extractor = extractor
+
+    def match_one(self, node: Node) -> Match:
+        selected_node = self.selector.select_one(node)
+        return Match(selected_node, self.extractor)
+
+    def match_all(self, node: Node) -> typing.List[Match]:
+        selected_nodes = self.selector.select_all(node)
+        return [Match(n, self.extractor) for n in selected_nodes]
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {self.selector=} {self.extractor=}>"
+
+
+class DictExtractor(Extractor):
+    def __init__(self, matcher_by_key: typing.Dict[str, Matcher]):
+        self.matcher_by_key = matcher_by_key
+
+    def extract(self, node: Node):
+        return {
+            key: matcher.match_one(node) for key, matcher in self.matcher_by_key.items()
+        }
+
+
+def generate_node_selector(node):
+    """
+    Generate a selector for the given node.
     :param node:
     :return:
     """
-    return [node] + list(node.parents)
+    assert isinstance(node, Tag)
 
-
-def generate_css_selectors_for_node(node: Tag, max_classes_per_node=None):
+    # use id
     tag_id = node.attrs.get("id", None)
     if tag_id:
         yield "#" + tag_id
 
+    # use classes
     css_classes = node.attrs.get("class", [])
-    css_class_combos = filter(
-        lambda ccc: max_classes_per_node is None or len(ccc) <= max_classes_per_node,
-        powerset(css_classes),
-    )
-    for css_class_combo in css_class_combos:
+    for css_class_combo in powerset_max_length(css_classes, CSS_CLASS_COMBINATIONS_MAX):
         css_clases_str = "".join(
             [".{}".format(css_class) for css_class in css_class_combo]
         )
         css_selector = node.name + css_clases_str
         yield css_selector
 
-    if type(node.parent) == Tag and hasattr(node, "name"):
-        children_tags = [c for c in node.parent.children if type(c) == Tag]
+    # todo: nth applies to whole selectors
+    #  -> should thus be a step after actual selector generation
+    if isinstance(node.parent, Tag) and hasattr(node, "name"):
+        children_tags = [c for c in node.parent.children if isinstance(c, Tag)]
         child_index = list(children_tags).index(node) + 1
         yield ":nth-child(%d)" % child_index
 
@@ -71,127 +330,46 @@ def generate_css_selectors_for_node(node: Tag, max_classes_per_node=None):
         child_index = children_of_same_type.index(node) + 1
         yield ":nth-of-type(%d)" % child_index
 
-    # todo yield all combination of nodes with all combinations of selectors
+
+def powerset_max_length(candidates, length):
+    return filter(lambda s: len(s) <= length, powerset(candidates))
 
 
-def get_selectors(node, parent):
+def _get_root_of_nodes(nodes):
+    # root can be node itself, so it has to be added
+    parent_paths_of_nodes = [[node] + list(node.parents) for node in nodes]
+
+    # paths are needed from top to bottom
+    parent_paths_rev = [list(reversed(pp)) for pp in parent_paths_of_nodes]
+    try:
+        ancestor = _get_root_of_paths(parent_paths_rev)
+    except RuntimeError:
+        raise RuntimeError(f"No common ancestor: {nodes}")
+    return ancestor
+
+
+def _get_root_of_paths(paths):
     """
-    Get the best selector to the node from the parent node.
-    :param node:
-    :param parent:
-    :return:
+    Computes the first common ancestor for list of paths.
+    :param paths: list of list of nodes from top to bottom
+    :return: first common index or RuntimeError
     """
+    # go through paths one by one, starting from bottom
+    for nodes in reversed(list(zip(*paths))):
+        node = nodes[0]
+        if all(n is node for n in nodes):
+            return nodes[0]
 
-    def matches_node(selector):
-        matches = parent.select(selector)
-        return matches[0] == node
-
-    return filter(matches_node, generate_css_selectors_for_node(node))
-
-
-def derive_css_selector(unique_ancestors_per_item, soup):
-    """
-    Find a CSS selector that matches one unique ancestor per item.
-    :param unique_ancestors_per_item:
-    :param soup: DOM
-    :return:
-    """
-    # start with element selectors
-    # only expand element selectors that actually match
-
-    # 3.1 generate selectors with a generator,
-    # 3.2 try them on the DOM, check that each results is exactly once in each list
-    #     (ensures true positives, no false positives)
-    # 3.3 store the best selector
-    # break if quality is 1 or above some threshold
-    # for the number of parents to consider
-
-    # selector, score
-    SelectorScoring = namedtuple("SelectorScoring", ["selector", "score"])
-    best = SelectorScoring(None, 0)
-
-    # for each candidate item
-    for item in flatten(unique_ancestors_per_item):
-
-        # for each selector of the base item
-        for css_selector_item in generate_css_selectors_for_node(item):
-            selector_matches = soup.select(css_selector_item)
-            # check if selector matches exactly once in each list
-            matches_in_exactly_one_list = [
-                # check that match is in exactly one list
-                sum([match in list_ for list_ in unique_ancestors_per_item]) == 1
-                # for all matches of the selector
-                for match in selector_matches
-            ]
-
-            score = mean(matches_in_exactly_one_list)
-            scoring = SelectorScoring(css_selector_item, score)
-            if scoring.score > best.score:
-                best = scoring
-            elif best.selector != scoring.selector:
-                print("Selector discarded: {} < {}".format(scoring, best))
-            else:
-                # found best selector, again
-                pass
-
-    return best.selector
+    raise RuntimeError("No common ancestor")
 
 
-def generate_unique_path_selectors(node):
-    soup = list(node.parents)[-1]
-    for css_selector in generate_path_selectors(node):
-        try:
-            matches = soup.select(css_selector)
-            if len(matches) == 1:
-                yield css_selector
-        except NotImplementedError:
-            pass
-            # logging.exception("Selector not implemented, cannot verify, skipping")
+def get_relative_depth(node: Node, root: Node):
+    node_parents = list(node.soup.parents)
 
+    # depth of root
+    i = node_parents.index(root.soup)
 
-def generate_path_selectors(node):
-    """
-    Generate all possible selectors for this specific node
-    :return:
-    """
-    if not isinstance(node, Tag):
-        error_msg = "Only tags can be selected with CSS, %s given" % type(node)
-        raise RuntimeError(error_msg)
+    # depth of element
+    j = len(node_parents)
 
-    # we have a list of n ancestor notes and n-1 nodes including the last node
-    # the last node must get selected always
-
-    # so we will:
-    # 1) generate all selectors for current node
-    # 2) append possible selectors for the n-1 descendants
-    # starting with all node selectors and increasing number of used descendants
-
-    # remove unique parents as they don't improve selection
-    # body is unique, html is unique, document is bs4 root element
-    parents = [n for n in node.parents if n.name not in ("body", "html", "[document]")]
-    # print(parents)
-
-    # loop from i=0 to i=len(parents) as we consider all parents
-    parent_node_count_max = min(len(parents) + 1, 2)
-    for parent_node_count in range(parent_node_count_max):
-        logging.info("path of length %d" % parent_node_count)
-        for parent_nodes_sampled in combinations(parents, parent_node_count):
-            path_sampled = (node,) + parent_nodes_sampled
-            # logging.info(path_sampled)
-
-            # make a list of selector generators for each node in the path
-            # todo limit generated selectors -> huge product
-            selector_generators_for_each_path_node = [
-                generate_css_selectors_for_node(n, max_classes_per_node=2)
-                for n in path_sampled
-            ]
-
-            # generator that outputs selector paths
-            # e.g. (div, .wrapper, .main)
-            path_sampled_selectors = product(*selector_generators_for_each_path_node)
-
-            # create an actual css selector for each selector path
-            # e.g. .main > .wrapper > .div
-            for path_sampled_selector in path_sampled_selectors:
-                css_selector = " > ".join(reversed(path_sampled_selector))
-                yield css_selector
+    return j - i

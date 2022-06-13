@@ -14,9 +14,7 @@ requirements = [
     "beautifulsoup4",
     "lxml",
     "more-itertools>=8",
-    "pandas",
     "requests",
-    "scikit-learn",
 ]
 
 setup_requirements = ["pytest-runner"]
