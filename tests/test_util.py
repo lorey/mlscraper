@@ -7,15 +7,13 @@ from mlscraper.util import Page
 
 
 class TestPage:
-    def test_something(self):
-        with open("tests/static/so.html") as file:
-            page = Page(file.read())
+    def test_something(self, stackoverflow_samples):
+        page = stackoverflow_samples[0].page
         nodes = page.select(".answer .js-vote-count")
         assert [n.text for n in nodes] == ["20", "16", "0"]
 
-    def test_find_all(self):
-        with open("tests/static/so.html") as file:
-            page = Page(file.read())
+    def test_find_all(self, stackoverflow_samples):
+        page = stackoverflow_samples[0].page
         nodes = page.find_all("/users/624900/jterrace")
         assert nodes
 
@@ -38,7 +36,7 @@ def test_extractor_factory():
     e2 = get_attribute_extractor("href")
     assert (
         e1 is e2
-    ), "extractor factory return different instances for the same extractor"
+    ), "extractor factory returns different instances for the same extractor"
 
 
 def test_get_root_of_nodes():
