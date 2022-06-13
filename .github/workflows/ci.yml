@@ -12,7 +12,6 @@ on:
 jobs:
   tests:
     name: ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -23,11 +22,15 @@ jobs:
           - {name: Mac, python: '3.10', os: macos-latest, tox: py310}
           - {name: '3.9', python: '3.9', os: ubuntu-latest, tox: py39}
           - {name: 'PyPy', python: 'pypy-3.9', os: ubuntu-latest, tox: pypy39}
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
+      - name: install system dependencies
+        run: sudo apt-get install libxml2-dev libxslt1-dev --yes
+        if: ${{ matrix.python == '3.11-dev' }}
       - name: update pip
         run: |
           pip install -U wheel
