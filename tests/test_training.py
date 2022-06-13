@@ -29,5 +29,6 @@ def stackoverflow_training_set():
     return make_training_set([page], [item])
 
 
+@pytest.mark.skip("takes too long")
 def test_train_scraper(stackoverflow_training_set):
     train_scraper(stackoverflow_training_set.item)

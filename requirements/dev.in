@@ -1,11 +1,7 @@
+-r docs.in
+-r tests.in
+
 bump2version
 wheel
 watchdog
-flake8
-tox
-coverage
-Sphinx
 twine
-
-pytest
-pytest-runner

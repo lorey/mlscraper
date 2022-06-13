@@ -23,16 +23,12 @@ test_requirements = ["pytest>=3"]
 setup(
     author="Karl Lorey",
     author_email="git@karllorey.com",
-    python_requires=">=3.5",
+    python_requires=">=3.9",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
         "Natural Language :: English",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python",
     ],
     description="Scrape HTML automatically with machine learning.",
     install_requires=requirements,
