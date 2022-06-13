@@ -1,7 +1,10 @@
 import pytest
-
-from mlscraper.samples import ItemStructureException, Sample, make_training_set
-from mlscraper.util import DictMatch, ListMatch, Page
+from mlscraper.samples import ItemStructureException
+from mlscraper.samples import make_training_set
+from mlscraper.samples import Sample
+from mlscraper.util import DictMatch
+from mlscraper.util import ListMatch
+from mlscraper.util import Page
 
 
 class TestTrainingSet:

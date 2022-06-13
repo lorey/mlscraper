@@ -2,9 +2,16 @@ import logging
 import typing
 from itertools import product
 
-from mlscraper.samples import DictItem, Item, ListItem, Sample, ValueItem
-from mlscraper.scrapers import DictScraper, ListScraper, ValueScraper
-from mlscraper.selectors import generate_selector_for_nodes, make_matcher_for_samples
+from mlscraper.samples import DictItem
+from mlscraper.samples import Item
+from mlscraper.samples import ListItem
+from mlscraper.samples import Sample
+from mlscraper.samples import ValueItem
+from mlscraper.scrapers import DictScraper
+from mlscraper.scrapers import ListScraper
+from mlscraper.scrapers import ValueScraper
+from mlscraper.selectors import generate_selector_for_nodes
+from mlscraper.selectors import make_matcher_for_samples
 from mlscraper.util import Node
 
 

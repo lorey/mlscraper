@@ -1,12 +1,9 @@
 from bs4 import BeautifulSoup
-
-from mlscraper.util import (
-    AttributeValueExtractor,
-    Node,
-    Page,
-    _get_root_of_nodes,
-    get_attribute_extractor,
-)
+from mlscraper.util import _get_root_of_nodes
+from mlscraper.util import AttributeValueExtractor
+from mlscraper.util import get_attribute_extractor
+from mlscraper.util import Node
+from mlscraper.util import Page
 
 
 class TestPage:

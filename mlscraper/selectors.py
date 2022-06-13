@@ -2,10 +2,12 @@ import logging
 import typing
 from itertools import product
 
-from more_itertools import flatten
-
 from mlscraper.samples import Sample
-from mlscraper.util import Matcher, Node, Page, Selector
+from mlscraper.util import Matcher
+from mlscraper.util import Node
+from mlscraper.util import Page
+from mlscraper.util import Selector
+from more_itertools import flatten
 
 
 class CssRuleSelector(Selector):

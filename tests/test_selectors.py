@@ -1,11 +1,8 @@
 import pytest
-
 from mlscraper.samples import Sample
-from mlscraper.selectors import (
-    generate_matchers_for_samples,
-    generate_selector_for_nodes,
-    make_matcher_for_samples,
-)
+from mlscraper.selectors import generate_matchers_for_samples
+from mlscraper.selectors import generate_selector_for_nodes
+from mlscraper.selectors import make_matcher_for_samples
 from mlscraper.util import Page
 
 

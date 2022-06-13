@@ -1,9 +1,12 @@
 import pytest
-
 from mlscraper.samples import Sample
-from mlscraper.scrapers import DictScraper, ListScraper, ValueScraper
+from mlscraper.scrapers import DictScraper
+from mlscraper.scrapers import ListScraper
+from mlscraper.scrapers import ValueScraper
 from mlscraper.selectors import CssRuleSelector
-from mlscraper.util import AttributeValueExtractor, Page, TextValueExtractor
+from mlscraper.util import AttributeValueExtractor
+from mlscraper.util import Page
+from mlscraper.util import TextValueExtractor
 
 
 @pytest.fixture

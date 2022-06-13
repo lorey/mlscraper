@@ -1,5 +1,4 @@
 import pytest
-
 from mlscraper.samples import make_training_set
 from mlscraper.training import train_scraper
 from mlscraper.util import Page

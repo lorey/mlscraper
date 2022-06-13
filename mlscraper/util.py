@@ -1,8 +1,10 @@
 import logging
 import typing
-from itertools import combinations, product
+from itertools import combinations
+from itertools import product
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
+from bs4 import Tag
 from more_itertools import powerset
 
 PARENT_NODE_COUNT_MAX = 2
@@ -162,7 +164,7 @@ class DictMatch(Match):
     def get_span(self) -> int:
         root = self.get_root()
         return sum(
-            [get_relative_depth(m.get_root(), root) for m in self.match_by_key.values()]
+            get_relative_depth(m.get_root(), root) for m in self.match_by_key.values()
         )
 
 
@@ -183,7 +185,7 @@ class ListMatch(Match):
 
     def get_span(self) -> int:
         return sum(
-            [get_relative_depth(m.get_root(), self.get_root()) for m in self.matches]
+            get_relative_depth(m.get_root(), self.get_root()) for m in self.matches
         )
 
 
@@ -313,9 +315,7 @@ def generate_node_selector(node):
     # use classes
     css_classes = node.attrs.get("class", [])
     for css_class_combo in powerset_max_length(css_classes, CSS_CLASS_COMBINATIONS_MAX):
-        css_clases_str = "".join(
-            [".{}".format(css_class) for css_class in css_class_combo]
-        )
+        css_clases_str = "".join([f".{css_class}" for css_class in css_class_combo])
         css_selector = node.name + css_clases_str
         yield css_selector
 

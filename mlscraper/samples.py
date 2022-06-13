@@ -1,7 +1,9 @@
 import typing
 from itertools import product
 
-from mlscraper.util import DictMatch, ListMatch, Page
+from mlscraper.util import DictMatch
+from mlscraper.util import ListMatch
+from mlscraper.util import Page
 
 
 class ItemStructureException(Exception):
