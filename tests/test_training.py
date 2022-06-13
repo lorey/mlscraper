@@ -1,34 +1,19 @@
 import pytest
-from mlscraper.samples import make_training_set
+from mlscraper.samples import TrainingSet
 from mlscraper.training import train_scraper
-from mlscraper.util import Page
 
 
-@pytest.fixture
-def stackoverflow_training_set():
-    with open("tests/static/so.html") as file:
-        page = Page(file.read())
+@pytest.mark.skip("listscraper just returns one result instead of three")
+def test_train_scraper(stackoverflow_samples):
+    training_set = TrainingSet()
+    for s in stackoverflow_samples:
+        training_set.add_sample(s)
 
-    item = [
-        {
-            "user": "/users/624900/jterrace",
-            "upvotes": "20",
-            "when": "2011-06-16 19:45:11Z",
-        },
-        {
-            "user": "/users/4044167/nico-knoll",
-            "upvotes": "16",
-            "when": "2017-09-06 15:27:16Z",
-        },
-        {
-            "user": "/users/1275778/lorey",
-            "upvotes": "0",
-            "when": "2021-01-06 10:50:04Z",
-        },
-    ]
-    return make_training_set([page], [item])
+    scraper = train_scraper(training_set.item)
+    print(f"result scraper: {scraper}")
 
+    scraping_result = scraper.get(stackoverflow_samples[0].page)
+    print(f"scraping result: {scraping_result}")
 
-@pytest.mark.skip("takes too long")
-def test_train_scraper(stackoverflow_training_set):
-    train_scraper(stackoverflow_training_set.item)
+    scraping_sample = stackoverflow_samples[0].value
+    assert scraping_result == scraping_sample

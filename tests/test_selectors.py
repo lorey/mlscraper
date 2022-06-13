@@ -1,6 +1,4 @@
-import pytest
 from mlscraper.samples import Sample
-from mlscraper.selectors import generate_matchers_for_samples
 from mlscraper.selectors import generate_selector_for_nodes
 from mlscraper.selectors import make_matcher_for_samples
 from mlscraper.util import Page
@@ -17,15 +15,6 @@ def test_make_matcher_for_samples():
 
     samples = [sample1, sample2]
     assert make_matcher_for_samples(samples).selector.css_rule in ["p.test", ".test"]
-
-
-@pytest.mark.skip("takes too long")
-def test_generate_css_selectors_for_samples():
-    with open("tests/static/so.html") as file:
-        page = Page(file.read())
-    samples = [Sample(page, ["20", "16", "0"])]
-    selector_first = next(generate_matchers_for_samples(samples=samples))
-    assert selector_first.endswith(".js-vote-count")
 
 
 def test_generate_selector_for_nodes():
