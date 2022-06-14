@@ -1,10 +1,10 @@
+from mlscraper.html import Page
+from mlscraper.matches import AttributeValueExtractor
+from mlscraper.matches import TextValueExtractor
 from mlscraper.scrapers import DictScraper
 from mlscraper.scrapers import ListScraper
 from mlscraper.scrapers import ValueScraper
 from mlscraper.selectors import CssRuleSelector
-from mlscraper.util import AttributeValueExtractor
-from mlscraper.util import Page
-from mlscraper.util import TextValueExtractor
 
 
 class TestListOfDictScraper:

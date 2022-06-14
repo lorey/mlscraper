@@ -1,8 +1,8 @@
 import typing
 
-from mlscraper.util import Extractor
-from mlscraper.util import Node
-from mlscraper.util import Selector
+from mlscraper.html import Node
+from mlscraper.matches import Extractor
+from mlscraper.selectors import Selector
 
 
 class Scraper:

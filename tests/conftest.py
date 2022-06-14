@@ -1,6 +1,6 @@
 import pytest
+from mlscraper.html import Page
 from mlscraper.samples import Sample
-from mlscraper.util import Page
 
 
 @pytest.fixture(scope="module")

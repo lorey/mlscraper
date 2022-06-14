@@ -2,17 +2,17 @@ import logging
 import typing
 from itertools import product
 
+from mlscraper.html import Node
 from mlscraper.samples import DictItem
 from mlscraper.samples import Item
 from mlscraper.samples import ListItem
+from mlscraper.samples import make_matcher_for_samples
 from mlscraper.samples import Sample
 from mlscraper.samples import ValueItem
 from mlscraper.scrapers import DictScraper
 from mlscraper.scrapers import ListScraper
 from mlscraper.scrapers import ValueScraper
 from mlscraper.selectors import generate_selector_for_nodes
-from mlscraper.selectors import make_matcher_for_samples
-from mlscraper.util import Node
 
 
 class TrainingException(Exception):
@@ -34,15 +34,22 @@ def train_scraper(item: Item, roots: typing.Optional[typing.List[Node]] = None):
         roots = [s.page for s in item.samples]
         logging.info(f"roots inferred: {roots}")
 
-    assert len(item.samples) == len(roots), f"{item.samples=} != {roots=}"
+    assert len(item.samples) == len(roots), f"{len(item.samples)=} != {len(roots)=}"
 
     if isinstance(item, ListItem):
-        # todo add root to get_matches
+        # so we have to extract a list from each root
+        # to do this, we take all matches we can find
+        # and try to find a common selector for one of the combinations root elements
+        # if that works, we've succeeded
+        # if not, we're out of luck for now
+        # todo add root to get_matches to receive only matches below roots
         matches_per_sample = [s.get_matches() for s in item.item.samples]
         for match_combi in product(*matches_per_sample):
-            print(f"{match_combi=}")
-            match_roots = [m.get_root() for m in match_combi]
-            print(f"{match_roots=}")
+            # match_combi is one possible way to combine matches to extract the list
+            logging.info(f"{match_combi=}")
+            # we now take the root of every element
+            match_roots = [m.root for m in match_combi]
+            logging.info(f"{match_roots=}")
             for selector in generate_selector_for_nodes(match_roots, roots):
                 # roots are the newly matched root elements
                 item_scraper = train_scraper(item.item, match_roots)
