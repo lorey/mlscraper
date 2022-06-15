@@ -103,7 +103,12 @@ def train_scraper_for_matches(matches, roots):
         # todo can be one of the parents
         match_roots = [m.root for m in matches]
         logging.info(f"{match_roots=}")
-        for selector in generate_selector_for_nodes(match_roots, roots):
+
+        # first selector is fine as it matches perfectly
+        # no need to try other selectors
+        # -> item_scraper would be the same
+        selector = first(generate_selector_for_nodes(match_roots, roots))
+        if selector:
             # for all the item_matches, create a tuple
             # that contains the item_match and the new root
             matches_and_roots = [
@@ -116,5 +121,7 @@ def train_scraper_for_matches(matches, roots):
                 list(item_matches), list(list_roots)
             )
             return ListScraper(selector, item_scraper)
+        else:
+            raise NoScraperFoundException()
     else:
         raise RuntimeError(f"type not matched: {found_type}")
