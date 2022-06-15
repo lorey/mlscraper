@@ -22,17 +22,24 @@ class CssRuleSelector(Selector):
     def __init__(self, css_rule):
         self.css_rule = css_rule
 
-    def select_one(self, page: Page):
-        return page.select(self.css_rule)[0]
+    def select_one(self, node: Node):
+        selection = node.select(self.css_rule)
+        if not selection:
+            raise AssertionError(
+                f"css rule does not match on node ({self.css_rule=}, {node=})"
+            )
+        return selection[0]
 
-    def select_all(self, page):
-        return page.select(self.css_rule)
+    def select_all(self, node: Node):
+        return node.select(self.css_rule)
 
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.css_rule=}>"
 
 
-def generate_selector_for_nodes(nodes, roots):
+def generate_selector_for_nodes(nodes: typing.List[Node], roots):
+    logging.info(f"trying to find selector for nodes ({nodes=})")
+
     if roots is None:
         logging.info("roots is None, setting roots manually")
         roots = [n.root for n in nodes]
@@ -42,7 +49,7 @@ def generate_selector_for_nodes(nodes, roots):
 
     nodes_per_root = {}
     for root in set(roots):
-        nodes_per_root[root] = [n for n, r in zip(nodes, roots) if r == root]
+        nodes_per_root[root] = [n for n in nodes if n.root == root]
 
     selectors_seen = set()
 
@@ -61,6 +68,10 @@ def generate_selector_for_nodes(nodes, roots):
                     logging.info(f"selector matches all nodes exactly ({sel=})")
                     yield CssRuleSelector(sel)
                 else:
+                    for root, nodes in nodes_per_root.items():
+                        logging.info(
+                            f"{root=}, {sel=}, {selector_matches_nodes(root, sel, nodes)=}"
+                        )
                     logging.info(f"selector does not match nodes exactly: {sel}")
 
                 # add to seen

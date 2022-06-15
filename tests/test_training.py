@@ -7,12 +7,12 @@ from mlscraper.training import train_scraper
 
 def test_train_scraper_simple_list():
     training_set = TrainingSet()
-    training_set.add_sample(
-        Sample(
-            Page(b"<html><body><p>a<p><i>noise</i><p>b</p><p>c</p></body></html>"),
-            ["a", "b", "c"],
-        )
+    page = Page(b"<html><body><p>a</p><i>noise</i><p>b</p><p>c</p></body></html>")
+    sample = Sample(
+        page,
+        ["a", "b", "c"],
     )
+    training_set.add_sample(sample)
     train_scraper(training_set.item)
 
 

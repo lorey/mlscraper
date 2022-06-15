@@ -61,3 +61,8 @@ class TestValueScraper:
         vs = ValueScraper(CssRuleSelector(".test"), TextValueExtractor())
         assert vs.get(page1) == "test"
         assert vs.get(page2) == "hallo"
+
+class TestListOfValuesScraper:
+    def test_list_of_values_scraper(self):
+        page = Page(b"<html><body><p>a</p><i>noise</i><p>b</p><p>c</p></body></html>")
+        ListScraper('p', )

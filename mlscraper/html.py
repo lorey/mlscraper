@@ -6,10 +6,12 @@ import logging
 import typing
 from abc import ABC
 from dataclasses import dataclass
-from itertools import combinations, product
+from itertools import combinations
+from itertools import product
 
-from bs4 import Tag, BeautifulSoup, NavigableString
-
+from bs4 import BeautifulSoup
+from bs4 import NavigableString
+from bs4 import Tag
 from mlscraper.util import powerset_max_length
 
 PARENT_NODE_COUNT_MAX = 2
@@ -18,7 +20,7 @@ CSS_CLASS_COMBINATIONS_MAX = 2
 
 @dataclass
 class Match(ABC):
-    node: 'Node' = None
+    node: "Node" = None
 
 
 @dataclass
@@ -67,7 +69,7 @@ class Node:
     soup = None
     _page = None
 
-    def __init__(self, soup, page: 'Page'):
+    def __init__(self, soup, page: "Page"):
         self.soup = soup
         self._page = page
 
@@ -83,7 +85,7 @@ class Node:
         return list(self._generate_find_all(item))
 
     def _generate_find_all(self, item):
-        assert isinstance(item, str), 'can only search for str at the moment'
+        assert isinstance(item, str), "can only search for str at the moment"
 
         # text
         for soup_node in self.soup.find_all(text=item):
@@ -156,7 +158,9 @@ class Node:
                     yield css_selector
 
     def select(self, css_selector):
-        return [self._page._get_node_for_soup(n) for n in self.soup.select(css_selector)]
+        return [
+            self._page._get_node_for_soup(n) for n in self.soup.select(css_selector)
+        ]
 
     def __repr__(self):
         if isinstance(self.soup, NavigableString):
@@ -195,7 +199,7 @@ class Page(Node):
 
 def get_root_node(nodes: typing.List[Node]) -> Node:
     pages = [n._page for n in nodes]
-    assert len(set(pages)) == 1, 'different pages found, cannot get a root'
+    assert len(set(pages)) == 1, "different pages found, cannot get a root"
     root = _get_root_of_nodes(n.soup for n in nodes)
     return pages[0]._get_node_for_soup(root)
 
@@ -229,7 +233,7 @@ def _get_root_of_paths(paths):
     for nodes in reversed(list(zip(*paths))):
         if len(set(nodes)) == 1:
             return nodes[0]
-    logging.info('failed to find ancestor for : %s', paths)
+    logging.info("failed to find ancestor for : %s", paths)
     raise RuntimeError("No common ancestor")
 
 
@@ -249,5 +253,6 @@ def selector_matches_nodes(root: Node, selector: str, expected: typing.List[Node
     """
     Check whether the given selector matches the expected nodes.
     """
+    # we care for equality here as selector should match the expected nodes in the exact given order
     # we do this here, as wrapping Nodes can have side effects regarding equality
-    return set(root.soup.select(selector)) == set(map(lambda n: n.soup, expected))
+    return root.soup.select(selector) == [n.soup for n in expected]

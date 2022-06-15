@@ -4,7 +4,10 @@ Matches are specific elements found on a page that match a sample.
 import logging
 import typing
 
-from mlscraper.html import Node, get_root_node, TextMatch, AttributeMatch
+from mlscraper.html import AttributeMatch
+from mlscraper.html import get_root_node
+from mlscraper.html import Node
+from mlscraper.html import TextMatch
 from mlscraper.selectors import Selector
 
 
@@ -79,6 +82,7 @@ class AttributeValueExtractor(Extractor):
     """
     Extracts a value from the attribute in an html tag.
     """
+
     attr = None
 
     def __init__(self, attr):
@@ -153,7 +157,7 @@ class ValueMatch(Match):
 
 
 def generate_all_matches(node: Node, item) -> typing.Generator[Match, None, None]:
-    logging.info(f'generating all matches ({node=}, {item=})')
+    logging.info(f"generating all matches ({node=}, {item=})")
     for html_match in node.find_all(item):
         matched_node = html_match.node
         if isinstance(html_match, TextMatch):
@@ -161,5 +165,7 @@ def generate_all_matches(node: Node, item) -> typing.Generator[Match, None, None
         elif isinstance(html_match, AttributeMatch):
             extractor = AttributeValueExtractor(html_match.attr)
         else:
-            raise RuntimeError(f"unknown match type ({html_match=}, {type(html_match)=})")
+            raise RuntimeError(
+                f"unknown match type ({html_match=}, {type(html_match)=})"
+            )
         yield ValueMatch(matched_node, extractor)

@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup
-
-from mlscraper.html import _get_root_of_nodes, Node, Page, selector_matches_nodes
+from mlscraper.html import _get_root_of_nodes
+from mlscraper.html import Node
+from mlscraper.html import Page
+from mlscraper.html import selector_matches_nodes
 from mlscraper.matches import AttributeValueExtractor
 
 
@@ -28,10 +30,12 @@ class TestPage:
 
 
 def test_attribute_extractor():
-    html_ = b'<html><body><a href="https://karllorey.com"></a><a>no link</a></body></html>'
+    html_ = (
+        b'<html><body><a href="https://karllorey.com"></a><a>no link</a></body></html>'
+    )
     page = Page(html_)
     extractor = AttributeValueExtractor("href")
-    a_tags = page.select('a')
+    a_tags = page.select("a")
     assert extractor.extract(a_tags[0]) == "https://karllorey.com"
     assert extractor.extract(a_tags[1]) is None
 
@@ -46,21 +50,30 @@ def test_extractor_factory():
 
 def test_equality():
     # we want to make sure that equal html does not result in equality
-    same_html = '<html><body><div><p></p></div></body></html>'
+    same_html = "<html><body><div><p></p></div></body></html>"
     assert Page(same_html) == Page(same_html)
     assert Page(same_html) is not Page(same_html)
 
 
 def test_select():
-    html = '<html><body><p></p><p></p></body></html>'
+    html = "<html><body><p></p><p></p></body></html>"
     page = Page(html)
-    p_tag_nodes = page.select('p')
+    p_tag_nodes = page.select("p")
     assert len(p_tag_nodes) == 2
     # not used in practice
     # assert len(set(p_tag_nodes)) == 2
 
 
 def test_selector_matches_nodes():
-    html = '<html><body><p></p><p></p></body></html>'
+    html = "<html><body><p>1</p><p>2</p></body></html>"
     page = Page(html)
-    assert selector_matches_nodes(page, 'p', list(reversed(page.select('p'))))
+
+    p_tags = page.select("p")
+    assert selector_matches_nodes(
+        page, "p", p_tags
+    ), "does not match properly ordered tags"
+
+    p_tags_reversed = list(reversed(p_tags))
+    assert not selector_matches_nodes(
+        page, "p", p_tags_reversed
+    ), "matches reversed order"

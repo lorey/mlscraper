@@ -178,9 +178,10 @@ def generate_matchers_for_samples(
     :param roots: root nodes to search from
     :return:
     """
-    logging.info(f"generating matchers for samples {samples}")
+    logging.info(f"generating matchers for samples {samples=} {roots=}")
     if not roots:
         roots = [s.page for s in samples]
+        logging.info("roots not set, will use samples' pages")
 
     assert len(samples) == len(roots)
 
