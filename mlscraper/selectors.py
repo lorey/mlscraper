@@ -4,6 +4,7 @@ import typing
 from mlscraper.html import Node
 from mlscraper.html import Page
 from mlscraper.html import selector_matches_nodes
+from more_itertools import bucket
 
 
 class Selector:
@@ -16,6 +17,15 @@ class Selector:
 
     def select_all(self, node: Node) -> typing.List[Node]:
         raise NotImplementedError()
+
+
+class PassThroughSelector(Selector):
+    def select_one(self, node: Node) -> Node:
+        return node
+
+    def select_all(self, node: Node) -> typing.List[Node]:
+        # this does not make sense as we have only one node to pass through
+        raise RuntimeError("cannot apply select_all to PassThroughSelector")
 
 
 class CssRuleSelector(Selector):
@@ -38,7 +48,8 @@ class CssRuleSelector(Selector):
 
 
 def generate_selector_for_nodes(nodes: typing.List[Node], roots):
-    logging.info(f"trying to find selector for nodes ({nodes=})")
+    logging.info(f"trying to find selector for nodes ({nodes=}, {roots=})")
+    assert nodes, "no nodes given"
 
     if roots is None:
         logging.info("roots is None, setting roots manually")
@@ -46,10 +57,8 @@ def generate_selector_for_nodes(nodes: typing.List[Node], roots):
 
     # todo roots and nodes can be uneven here because we just want to find a way
     #  to select all the nodes from the given roots
-
-    nodes_per_root = {}
-    for root in set(roots):
-        nodes_per_root[root] = [n for n in nodes if n.root == root]
+    nodes_per_root = {r: [n for n in nodes if n.has_parent(r)] for r in set(roots)}
+    logging.info(f"item by root: %s", nodes_per_root)
 
     selectors_seen = set()
 

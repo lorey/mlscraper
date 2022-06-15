@@ -136,6 +136,7 @@ class ListMatch(Match):
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.matches=}>"
 
+    @property
     def root(self) -> Node:
         return get_root_node([m.root for m in self.matches])
 
@@ -156,8 +157,10 @@ class ValueMatch(Match):
         return self.node
 
 
-def generate_all_matches(node: Node, item) -> typing.Generator[Match, None, None]:
-    logging.info(f"generating all matches ({node=}, {item=})")
+def generate_all_value_matches(
+    node: Node, item: str
+) -> typing.Generator[Match, None, None]:
+    logging.info(f"generating all value matches ({node=}, {item=})")
     for html_match in node.find_all(item):
         matched_node = html_match.node
         if isinstance(html_match, TextMatch):

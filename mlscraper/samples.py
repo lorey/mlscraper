@@ -5,7 +5,7 @@ from itertools import product
 from mlscraper.html import Node
 from mlscraper.html import Page
 from mlscraper.matches import DictMatch
-from mlscraper.matches import generate_all_matches
+from mlscraper.matches import generate_all_value_matches
 from mlscraper.matches import ListMatch
 from mlscraper.matches import Matcher
 from mlscraper.selectors import CssRuleSelector
@@ -28,7 +28,7 @@ class Sample:
         # todo: fix creating new sample objects, maybe by using Item class?
 
         if isinstance(self.value, str):
-            return list(generate_all_matches(self.page, self.value))
+            return list(generate_all_value_matches(self.page, self.value))
 
         if isinstance(self.value, list):
             matches_by_value = [Sample(self.page, v).get_matches() for v in self.value]

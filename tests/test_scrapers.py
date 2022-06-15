@@ -5,6 +5,7 @@ from mlscraper.scrapers import DictScraper
 from mlscraper.scrapers import ListScraper
 from mlscraper.scrapers import ValueScraper
 from mlscraper.selectors import CssRuleSelector
+from mlscraper.selectors import PassThroughSelector
 
 
 class TestListOfDictScraper:
@@ -62,7 +63,12 @@ class TestValueScraper:
         assert vs.get(page1) == "test"
         assert vs.get(page2) == "hallo"
 
+
 class TestListOfValuesScraper:
     def test_list_of_values_scraper(self):
         page = Page(b"<html><body><p>a</p><i>noise</i><p>b</p><p>c</p></body></html>")
-        ListScraper('p', )
+        scraper = ListScraper(
+            CssRuleSelector("p"),
+            ValueScraper(PassThroughSelector(), TextValueExtractor()),
+        )
+        assert scraper.get(page) == ["a", "b", "c"]

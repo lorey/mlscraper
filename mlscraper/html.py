@@ -102,6 +102,12 @@ class Node:
 
         # todo implement other find methods
 
+    def has_parent(self, node: "Node"):
+        for p in self.soup.parents:
+            if p == node.soup:
+                return True
+        return False
+
     def generate_path_selectors(self):
         """
         Generate a selector for the path to the given node.

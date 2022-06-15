@@ -13,7 +13,7 @@ def test_train_scraper_simple_list():
         ["a", "b", "c"],
     )
     training_set.add_sample(sample)
-    train_scraper(training_set.item)
+    train_scraper(training_set)
 
 
 @pytest.mark.skip("fucking fails")
@@ -22,7 +22,7 @@ def test_train_scraper(stackoverflow_samples):
     for s in stackoverflow_samples:
         training_set.add_sample(s)
 
-    scraper = train_scraper(training_set.item)
+    scraper = train_scraper(training_set)
     print(f"result scraper: {scraper}")
     print(f"selector for list items: {scraper.selector}")
 
