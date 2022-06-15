@@ -16,7 +16,7 @@ def test_train_scraper_simple_list():
     train_scraper(training_set)
 
 
-@pytest.mark.skip("fucking fails")
+@pytest.mark.skip("does not work yet")
 def test_train_scraper(stackoverflow_samples):
     training_set = TrainingSet()
     for s in stackoverflow_samples:

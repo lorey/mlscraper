@@ -103,8 +103,7 @@ def train_scraper_for_matches(matches, roots):
         # todo can be one of the parents
         match_roots = [m.root for m in matches]
         logging.info(f"{match_roots=}")
-        selector = first(generate_selector_for_nodes(match_roots, roots))
-        if selector:
+        for selector in generate_selector_for_nodes(match_roots, roots):
             # for all the item_matches, create a tuple
             # that contains the item_match and the new root
             matches_and_roots = [
