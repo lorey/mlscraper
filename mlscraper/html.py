@@ -14,9 +14,6 @@ from bs4 import NavigableString
 from bs4 import Tag
 from mlscraper.util import powerset_max_length
 
-PARENT_NODE_COUNT_MAX = 2
-CSS_CLASS_COMBINATIONS_MAX = 2
-
 
 @dataclass
 class Match(ABC):
@@ -33,7 +30,7 @@ class AttributeMatch(Match):
     attr: str = None
 
 
-def _generate_css_selectors_for_node(soup: Tag):
+def _generate_css_selectors_for_node(soup: Tag, complexity: int):
     """
     Generate a selector for the given node.
     :param soup:
@@ -48,7 +45,7 @@ def _generate_css_selectors_for_node(soup: Tag):
 
     # use classes
     css_classes = soup.attrs.get("class", [])
-    for css_class_combo in powerset_max_length(css_classes, CSS_CLASS_COMBINATIONS_MAX):
+    for css_class_combo in powerset_max_length(css_classes, complexity):
         css_clases_str = "".join([f".{css_class}" for css_class in css_class_combo])
         css_selector = soup.name + css_clases_str
         yield css_selector
@@ -108,7 +105,7 @@ class Node:
                 return True
         return False
 
-    def generate_path_selectors(self):
+    def generate_path_selectors(self, complexity: int):
         """
         Generate a selector for the path to the given node.
         :return:
@@ -133,7 +130,7 @@ class Node:
         # print(parents)
 
         # loop from i=0 to i=len(parents) as we consider all parents
-        parent_node_count_max = min(len(parents), PARENT_NODE_COUNT_MAX)
+        parent_node_count_max = min(len(parents), complexity)
         for parent_node_count in range(parent_node_count_max + 1):
             logging.info(
                 "generating path selectors with %d parents" % parent_node_count
@@ -146,7 +143,8 @@ class Node:
                 # make a list of selector generators for each node in the path
                 # todo limit generated selectors -> huge product
                 selector_generators_for_each_path_node = [
-                    _generate_css_selectors_for_node(n) for n in path_sampled
+                    _generate_css_selectors_for_node(n, complexity)
+                    for n in path_sampled
                 ]
 
                 # generator that outputs selector paths
@@ -171,7 +169,7 @@ class Node:
     def __repr__(self):
         if isinstance(self.soup, NavigableString):
             return f"<{self.__class__.__name__} {self.soup[:100]=}>"
-        return f"<{self.__class__.__name__} {self.soup.name=} classes={self.soup.get('class', None)}>"
+        return f"<{self.__class__.__name__} {self.soup.name=} classes={self.soup.get('class', None)}, text={self.soup.text[:10]}...>"
 
     def __hash__(self):
         return self.soup.__hash__()

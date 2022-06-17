@@ -32,17 +32,35 @@ def train_scraper(training_set: TrainingSet):
 
     sample_matches = [s.get_matches() for s in training_set.item.samples]
     roots = [s.page for s in training_set.item.samples]
-    for match_combination in product(*sample_matches):
-        logging.info(f"trying to train scraper for matches ({match_combination=})")
-        scraper = train_scraper_for_matches(match_combination, roots)
-        return scraper
+    match_combinations = [mc for mc in product(*sample_matches)]
+    logging.info(f"Trying {len(match_combinations)=}")
+
+    for complexity in range(3):
+        for match_combination in match_combinations:
+            logging.info(
+                f"progress {match_combinations.index(match_combination)/len(match_combinations)}"
+            )
+            try:
+                logging.info(
+                    f"trying to train scraper for matches ({match_combination=})"
+                )
+                scraper = train_scraper_for_matches(
+                    match_combination, roots, complexity
+                )
+                return scraper
+            except NoScraperFoundException:
+                logging.info(
+                    f"no scraper found for complexity and match_combination ({complexity=}, {match_combination=})"
+                )
+    raise NoScraperFoundException(f"did not find scraper")
 
 
-def train_scraper_for_matches(matches, roots):
+def train_scraper_for_matches(matches, roots, complexity: int):
     """
     Train a scraper that finds the given matches from the given roots.
     :param matches: the matches to scrape
     :param roots: the root elements containing the matches, e.g. pages or elements on pages
+    :param complexity: the complexity to try
     """
     found_types = set(map(type, matches))
     assert (
@@ -71,9 +89,15 @@ def train_scraper_for_matches(matches, roots):
         if all(m.node == r for m, r in zip(matches, roots)):
             # nodes are matched already, done
             return ValueScraper(PassThroughSelector(), extractor=extractor)
+        else:
+            logging.info(
+                "no early return: %s",
+                [(m.node, r, m.node == r) for m, r in zip(matches, roots)],
+            )
 
         selector = first(
-            generate_selector_for_nodes([m.node for m in matches], roots), None
+            generate_selector_for_nodes([m.node for m in matches], roots, complexity),
+            None,
         )
         if not selector:
             raise NoScraperFoundException(f"no selector found {matches=}")
@@ -90,35 +114,50 @@ def train_scraper_for_matches(matches, roots):
         # matches are the matches for the keys
         # roots are the original roots(?)
         scraper_per_key = {
-            k: train_scraper_for_matches([m.match_by_key[k] for m in matches], roots)
+            k: train_scraper_for_matches(
+                [m.match_by_key[k] for m in matches], roots, complexity
+            )
             for k in keys
         }
         return DictScraper(scraper_per_key)
     elif found_type == ListMatch:
         logging.info("training ListScraper")
         matches: typing.List[ListMatch]
+        logging.info(matches)
 
         # so we have a list of ListMatch objects
         # we have to find a selector that uniquely matches the list elements
         # todo can be one of the parents
-        match_roots = [m.root for m in matches]
-        logging.info(f"{match_roots=}")
+        # for each match, generate all the nodes of list items
+        list_item_match_and_roots = [
+            (im, r) for m, r in zip(matches, roots) for im in m.matches
+        ]
+        list_item_nodes_and_roots = [
+            (im.root, r) for im, r in list_item_match_and_roots
+        ]
+        item_nodes, item_roots = unzip(list_item_nodes_and_roots)
 
         # first selector is fine as it matches perfectly
         # no need to try other selectors
         # -> item_scraper would be the same
-        selector = first(generate_selector_for_nodes(match_roots, roots))
+        selector = first(
+            generate_selector_for_nodes(list(item_nodes), list(item_roots), complexity),
+            None,
+        )
         if selector:
-            # for all the item_matches, create a tuple
-            # that contains the item_match and the new root
-            matches_and_roots = [
-                (im, selector.select_one(r))
-                for m, r in zip(matches, roots)
-                for im in m.matches
+            logging.info(f"selector that matches list items found ({selector=})")
+            # so we have found a selector that matches the list items
+            # we now need a scraper, that scrapes each contained item
+            # todo im.root does not hold for all items, could be a parent
+            item_matches_and_item_roots = [
+                (im, im.root) for im, r in list_item_match_and_roots
             ]
-            item_matches, list_roots = unzip(matches_and_roots)
+            logging.info(
+                f"training to extract list items now ({item_matches_and_item_roots})"
+            )
+            item_matches, item_roots = unzip(item_matches_and_item_roots)
             item_scraper = train_scraper_for_matches(
-                list(item_matches), list(list_roots)
+                list(item_matches), list(item_roots), complexity
             )
             return ListScraper(selector, item_scraper)
         else:

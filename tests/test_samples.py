@@ -3,7 +3,6 @@ from mlscraper.html import Page
 from mlscraper.matches import DictMatch
 from mlscraper.matches import ListMatch
 from mlscraper.samples import ItemStructureException
-from mlscraper.samples import make_matcher_for_samples
 from mlscraper.samples import make_training_set
 from mlscraper.samples import Sample
 
@@ -64,17 +63,3 @@ class TestMatch:
         assert len(match.matches) == 2
         assert all(isinstance(m, DictMatch) for m in match.matches)
         print(match.root)
-
-
-def test_make_matcher_for_samples():
-    page1_html = '<html><body><p class="test">test</p><p>bla</p></body></html>'
-    page1 = Page(page1_html)
-    sample1 = Sample(page1, "test")
-
-    page2_html = '<html><body><div></div><p class="test">hallo</p></body></html>'
-    page2 = Page(page2_html)
-    sample2 = Sample(page2, "hallo")
-
-    samples = [sample1, sample2]
-    matcher = make_matcher_for_samples(samples)
-    assert matcher.selector.css_rule in ["p.test", ".test"]

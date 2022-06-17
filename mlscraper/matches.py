@@ -3,12 +3,12 @@ Matches are specific elements found on a page that match a sample.
 """
 import logging
 import typing
+from functools import cached_property
 
 from mlscraper.html import AttributeMatch
 from mlscraper.html import get_root_node
 from mlscraper.html import Node
 from mlscraper.html import TextMatch
-from mlscraper.selectors import Selector
 
 
 class Match:
@@ -31,30 +31,6 @@ class Extractor:
 
     def extract(self, node: Node):
         raise NotImplementedError()
-
-
-class Matcher:
-    """
-    Class that finds/selects nodes and extracts items from these nodes.
-    """
-
-    selector = None
-    extractor = None
-
-    def __init__(self, selector: Selector, extractor: Extractor):
-        self.selector = selector
-        self.extractor = extractor
-
-    def match_one(self, node: Node) -> Match:
-        selected_node = self.selector.select_one(node)
-        return Match(selected_node, self.extractor)
-
-    def match_all(self, node: Node) -> typing.List[Match]:
-        selected_nodes = self.selector.select_all(node)
-        return [Match(n, self.extractor) for n in selected_nodes]
-
-    def __repr__(self):
-        return f"<{self.__class__.__name__} {self.selector=} {self.extractor=}>"
 
 
 class TextValueExtractor(Extractor):
@@ -102,23 +78,13 @@ class AttributeValueExtractor(Extractor):
         return isinstance(other, AttributeValueExtractor) and self.attr == other.attr
 
 
-class DictExtractor(Extractor):
-    def __init__(self, matcher_by_key: typing.Dict[str, Matcher]):
-        self.matcher_by_key = matcher_by_key
-
-    def extract(self, node: Node):
-        return {
-            key: matcher.match_one(node) for key, matcher in self.matcher_by_key.items()
-        }
-
-
 class DictMatch(Match):
     match_by_key = None
 
     def __init__(self, match_by_key: dict):
         self.match_by_key = match_by_key
 
-    @property
+    @cached_property
     def root(self) -> Node:
         match_roots = [m.root for m in self.match_by_key.values()]
         return get_root_node(match_roots)
@@ -136,7 +102,7 @@ class ListMatch(Match):
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.matches=}>"
 
-    @property
+    @cached_property
     def root(self) -> Node:
         return get_root_node([m.root for m in self.matches])
 

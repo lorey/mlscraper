@@ -2,9 +2,7 @@ import logging
 import typing
 
 from mlscraper.html import Node
-from mlscraper.html import Page
 from mlscraper.html import selector_matches_nodes
-from more_itertools import bucket
 
 
 class Selector:
@@ -47,8 +45,10 @@ class CssRuleSelector(Selector):
         return f"<{self.__class__.__name__} {self.css_rule=}>"
 
 
-def generate_selector_for_nodes(nodes: typing.List[Node], roots):
-    logging.info(f"trying to find selector for nodes ({nodes=}, {roots=})")
+def generate_selector_for_nodes(nodes: typing.List[Node], roots, complexity: int):
+    logging.info(
+        f"trying to find selector for nodes ({nodes=}, {roots=}, {complexity=})"
+    )
     assert nodes, "no nodes given"
 
     if roots is None:
@@ -63,7 +63,7 @@ def generate_selector_for_nodes(nodes: typing.List[Node], roots):
     selectors_seen = set()
 
     for node in nodes:
-        for sel in node.generate_path_selectors():
+        for sel in node.generate_path_selectors(complexity):
             logging.info(f"selector: {sel}")
             if sel not in selectors_seen:
                 logging.info(

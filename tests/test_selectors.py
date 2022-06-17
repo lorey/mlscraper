@@ -16,6 +16,6 @@ def test_generate_selector_for_nodes():
 
     nodes = [s.get_matches()[0].root for s in samples]
     print(nodes)
-    gen = generate_selector_for_nodes(nodes, None)
+    gen = generate_selector_for_nodes(nodes, None, 1)
     # todo .test is also possible
     assert ["p.test"] == [sel.css_rule for sel in gen]
