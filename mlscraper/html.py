@@ -43,12 +43,18 @@ def _generate_css_selectors_for_node(soup: Tag, complexity: int):
     if tag_id:
         yield "#" + tag_id
 
+    yield soup.name
+
     # use classes
     css_classes = soup.attrs.get("class", [])
     for css_class_combo in powerset_max_length(css_classes, complexity):
-        css_clases_str = "".join([f".{css_class}" for css_class in css_class_combo])
-        css_selector = soup.name + css_clases_str
-        yield css_selector
+        if css_class_combo:
+            css_clases_str = "".join([f".{css_class}" for css_class in css_class_combo])
+            yield css_clases_str
+            yield soup.name + css_clases_str
+        else:
+            # empty set, no selector
+            pass
 
     # todo: nth applies to whole selectors
     #  -> should thus be a step after actual selector generation
