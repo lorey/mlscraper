@@ -1,7 +1,10 @@
 import logging
 import typing
+from itertools import combinations
+from itertools import permutations
 from itertools import product
 
+from mlscraper.html import get_relative_depth
 from mlscraper.matches import DictMatch
 from mlscraper.matches import ListMatch
 from mlscraper.matches import ValueMatch
@@ -31,12 +34,21 @@ def train_scraper(training_set: TrainingSet):
     logging.info(f"training {training_set=}")
 
     sample_matches = [s.get_matches() for s in training_set.item.samples]
+    logging.info(
+        f"number of matches found per sample: {[(s, len(s.get_matches())) for s in training_set.item.samples]}"
+    )
     roots = [s.page for s in training_set.item.samples]
     match_combinations = [mc for mc in product(*sample_matches)]
     logging.info(f"Trying {len(match_combinations)=}")
 
+    # to train quicker, we'll start with combinations that have a high depth
+    # this prefers matches, that have a deep root
+    # and are thus closer to each other
+    match_combinations_by_depth = sorted(
+        match_combinations, key=lambda mc: sum(m.depth for m in mc), reverse=True
+    )
     for complexity in range(3):
-        for match_combination in match_combinations:
+        for match_combination in match_combinations_by_depth:
             logging.info(
                 f"progress {match_combinations.index(match_combination)/len(match_combinations)}"
             )
@@ -73,6 +85,13 @@ def train_scraper_for_matches(matches, roots, complexity: int):
     roots = list(roots)
 
     assert len(matches) == len(roots), f"got uneven inputs ({matches=}, {roots=})"
+
+    if len({m.root.soup.name for m in matches}) != 1:
+        raise NoScraperFoundException("different names found")
+
+    if any(c1.has_overlap(c2) for c1, c2 in combinations(matches, 2)):
+        raise NoScraperFoundException("a pair of matches overlaps, most likely invalid")
+
     if found_type == ValueMatch:
         logging.info("training ValueScraper")
         matches: typing.List[ValueMatch]

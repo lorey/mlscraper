@@ -61,18 +61,15 @@ def test_train_scraper_list_of_dicts():
     assert isinstance(value_scraper.extractor, TextValueExtractor)
 
 
-@pytest.mark.skip("takes too long")
-def test_train_scraper(stackoverflow_samples):
+def test_train_scraper_stackoverflow(stackoverflow_samples):
     training_set = TrainingSet()
     for s in stackoverflow_samples:
         training_set.add_sample(s)
 
     scraper = train_scraper(training_set)
-    print(f"result scraper: {scraper}")
-    print(f"selector for list items: {scraper.selector}")
+    assert isinstance(scraper, ListScraper)
+    assert isinstance(scraper.selector, CssRuleSelector)
 
     scraping_result = scraper.get(stackoverflow_samples[0].page)
-    print(f"scraping result: {scraping_result}")
-
     scraping_sample = stackoverflow_samples[0].value
     assert scraping_result == scraping_sample

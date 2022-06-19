@@ -4,6 +4,7 @@ from itertools import product
 from mlscraper.html import Page
 from mlscraper.matches import DictMatch
 from mlscraper.matches import generate_all_value_matches
+from mlscraper.matches import is_disjoint_match_combination
 from mlscraper.matches import ListMatch
 
 
@@ -33,7 +34,11 @@ class Sample:
             # todo create combinations only in order
             match_combis = product(*matches_by_value)
 
-            return [ListMatch(tuple(match_combi)) for match_combi in match_combis]
+            return [
+                ListMatch(tuple(match_combi))
+                for match_combi in match_combis
+                if is_disjoint_match_combination(match_combi)
+            ]
 
         if isinstance(self.value, dict):
             matches_by_key = {
@@ -43,6 +48,7 @@ class Sample:
             return [
                 DictMatch(dict(zip(matches_by_key.keys(), mc)))
                 for mc in product(*matches_by_key.values())
+                if is_disjoint_match_combination(mc)
             ]
 
         raise RuntimeError(f"unsupported value: {self.value}")

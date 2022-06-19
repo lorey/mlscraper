@@ -4,8 +4,10 @@ Matches are specific elements found on a page that match a sample.
 import logging
 import typing
 from functools import cached_property
+from itertools import combinations
 
 from mlscraper.html import AttributeMatch
+from mlscraper.html import get_relative_depth
 from mlscraper.html import get_root_node
 from mlscraper.html import Node
 from mlscraper.html import TextMatch
@@ -22,6 +24,26 @@ class Match:
         The lowest element that contains matched elements.
         """
         raise NotImplementedError()
+
+    def has_overlap(self, other_match: "Match"):
+        assert isinstance(other_match, Match)
+
+        # early return if different document
+        if self.root.root != other_match.root.root:
+            return False
+
+        return (
+            # overlap if same root node
+            self.root == other_match.root
+            # or if one is a parent of the other one
+            or self.root.has_parent(other_match.root)
+            or other_match.root.has_parent(self.root)
+        )
+
+    @cached_property
+    def depth(self):
+        # depth of root compared to document
+        return get_relative_depth(self.root, self.root.root)
 
 
 class Extractor:
@@ -138,3 +160,10 @@ def generate_all_value_matches(
                 f"unknown match type ({html_match=}, {type(html_match)=})"
             )
         yield ValueMatch(matched_node, extractor)
+
+
+def is_disjoint_match_combination(matches):
+    """
+    Check if the given matches have no overlap.
+    """
+    return all(not m1.has_overlap(m2) for m1, m2 in combinations(matches, 2))

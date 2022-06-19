@@ -111,6 +111,14 @@ class Node:
                 return True
         return False
 
+    @property
+    def classes(self):
+        return self.soup.attrs.get("class", [])
+
+    @property
+    def tag_name(self):
+        return self.soup.name
+
     def generate_path_selectors(self, complexity: int):
         """
         Generate a selector for the path to the given node.
@@ -174,8 +182,8 @@ class Node:
 
     def __repr__(self):
         if isinstance(self.soup, NavigableString):
-            return f"<{self.__class__.__name__} {self.soup[:100]=}>"
-        return f"<{self.__class__.__name__} {self.soup.name=} classes={self.soup.get('class', None)}, text={self.soup.text[:10]}...>"
+            return f"<{self.__class__.__name__} {self.soup.strip()[:10]=}>"
+        return f"<{self.__class__.__name__} {self.soup.name=} classes={self.soup.get('class', None)}, text={self.soup.text.strip()[:10]}...>"
 
     def __hash__(self):
         return self.soup.__hash__()
@@ -263,6 +271,9 @@ def selector_matches_nodes(root: Node, selector: str, expected: typing.List[Node
     """
     Check whether the given selector matches the expected nodes.
     """
+    logging.info(
+        f"checking if selector matches nodes ({root=}, {selector=}, {expected=})"
+    )
     # we care for equality here as selector should match the expected nodes in the exact given order
     # we do this here, as wrapping Nodes can have side effects regarding equality
     return root.soup.select(selector) == [n.soup for n in expected]

@@ -64,6 +64,20 @@ def test_select():
     # assert len(set(p_tag_nodes)) == 2
 
 
+def test_tag_name():
+    html = b"<html><body><p>bla</p></body></html>"
+    p = Page(html)
+    tag_node = p.select("p")[0]
+    assert tag_node.tag_name == "p"
+
+
+def test_classes():
+    html = b'<html><body><p class="box bordered">bla</p></body></html>'
+    p = Page(html)
+    tag_node = p.select("p")[0]
+    assert tag_node.classes == ["box", "bordered"]
+
+
 def test_selector_matches_nodes():
     html = "<html><body><p>1</p><p>2</p></body></html>"
     page = Page(html)
