@@ -1,14 +1,17 @@
 ==================================================================================
-mlscraper: Scrape data from HTML pages automatically with Machine Learning
+mlscraper: Scrape data from HTML pages automatically
 ==================================================================================
 
-.. image:: https://img.shields.io/github/worklow/status/lorey/mlscraper/tests   :alt: CI status
+.. image:: https://img.shields.io/github/worklow/status/lorey/mlscraper/tests
+   :alt: CI status
    :target: https://github.com/lorey/mlscraper/ci
 
-.. image:: https://img.shields.io/pypi/v/mlscraper   :alt: PyPI version
+.. image:: https://img.shields.io/pypi/v/mlscraper
+   :alt: PyPI version
    :target: https://pypi.org/project/mlscraper/
 
-.. image:: https://img.shields.io/pypi/pyversions/mlscraper   :alt: PyPI python version
+.. image:: https://img.shields.io/pypi/pyversions/mlscraper
+   :alt: PyPI python version
    :target: https://pypi.org/project/mlscraper/
 
 `mlscraper` allows you to extract structured data from HTML automatically
