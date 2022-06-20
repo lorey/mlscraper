@@ -1,6 +1,5 @@
 from bs4 import BeautifulSoup
 from mlscraper.html import _get_root_of_nodes
-from mlscraper.html import Node
 from mlscraper.html import Page
 from mlscraper.html import selector_matches_nodes
 from mlscraper.matches import AttributeValueExtractor

@@ -3,7 +3,6 @@ Encapsulation of html-related functionality.
 BeautifulSoup should only get used here.
 """
 import logging
-import typing
 from abc import ABC
 from dataclasses import dataclass
 from functools import cached_property
@@ -44,7 +43,7 @@ class Node:
     def text(self):
         return self.soup.text
 
-    def find_all(self, item) -> typing.List[Match]:
+    def find_all(self, item) -> list[Match]:
         return list(self._generate_find_all(item))
 
     def _generate_find_all(self, item):
@@ -95,7 +94,11 @@ class Node:
     def __repr__(self):
         if isinstance(self.soup, NavigableString):
             return f"<{self.__class__.__name__} {self.soup.strip()[:10]=}>"
-        return f"<{self.__class__.__name__} {self.soup.name=} classes={self.soup.get('class', None)}, text={''.join(self.soup.stripped_strings)[:10]}...>"
+        return (
+            f"<{self.__class__.__name__} {self.soup.name=}"
+            f" classes={self.soup.get('class', None)},"
+            f" text={''.join(self.soup.stripped_strings)[:10]}...>"
+        )
 
     def __hash__(self):
         return self.soup.__hash__()
@@ -127,7 +130,7 @@ class Page(Node):
         return self._node_registry[soup]
 
 
-def get_root_node(nodes: typing.List[Node]) -> Node:
+def get_root_node(nodes: list[Node]) -> Node:
     pages = [n._page for n in nodes]
     assert len(set(pages)) == 1, "different pages found, cannot get a root"
     root = _get_root_of_nodes(n.soup for n in nodes)
@@ -179,13 +182,14 @@ def get_relative_depth(node: Node, root: Node):
     return j - i
 
 
-def selector_matches_nodes(root: Node, selector: str, expected: typing.List[Node]):
+def selector_matches_nodes(root: Node, selector: str, expected: list[Node]):
     """
     Check whether the given selector matches the expected nodes.
     """
     logging.info(
         f"checking if selector matches nodes ({root=}, {selector=}, {expected=})"
     )
-    # we care for equality here as selector should match the expected nodes in the exact given order
+    # we care for equality here
+    # as selector should match the expected nodes in the exact given order
     # we do this here, as wrapping Nodes can have side effects regarding equality
     return root.soup.select(selector) == [n.soup for n in expected]

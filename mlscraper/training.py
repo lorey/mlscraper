@@ -1,5 +1,4 @@
 import logging
-import typing
 from itertools import combinations
 from itertools import product
 
@@ -33,7 +32,8 @@ def train_scraper(training_set: TrainingSet):
 
     sample_matches = [s.get_matches() for s in training_set.item.samples]
     logging.info(
-        f"number of matches found per sample: {[(s, len(s.get_matches())) for s in training_set.item.samples]}"
+        "number of matches found per sample: %s",
+        [(s, len(s.get_matches())) for s in training_set.item.samples],
     )
     roots = [s.page for s in training_set.item.samples]
     match_combinations = [mc for mc in product(*sample_matches)]
@@ -46,12 +46,14 @@ def train_scraper(training_set: TrainingSet):
         match_combinations, key=lambda mc: sum(m.depth for m in mc), reverse=True
     )
     # todo compute selectivity of classes to use selective ones first
-    # todo cache selectors of node combinations to avoid re-selecting after increasing complexity
+    # todo cache selectors of node combinations
+    #  to avoid re-selecting after increasing complexity
     for complexity in range(3):
         for match_combination in match_combinations_by_depth:
-            logging.info(
-                f"progress {match_combinations.index(match_combination)/len(match_combinations)}"
+            progress_ratio = match_combinations.index(match_combination) / len(
+                match_combinations
             )
+            logging.info(f"progress {progress_ratio}")
             try:
                 logging.info(
                     f"trying to train scraper for matches ({match_combination=})"
@@ -62,9 +64,11 @@ def train_scraper(training_set: TrainingSet):
                 return scraper
             except NoScraperFoundException:
                 logging.info(
-                    f"no scraper found for complexity and match_combination ({complexity=}, {match_combination=})"
+                    "no scraper found "
+                    "for complexity and match_combination "
+                    f"({complexity=}, {match_combination=})"
                 )
-    raise NoScraperFoundException(f"did not find scraper")
+    raise NoScraperFoundException("did not find scraper")
 
 
 def train_scraper_for_matches(matches, roots, complexity: int):
@@ -94,7 +98,7 @@ def train_scraper_for_matches(matches, roots, complexity: int):
 
     if found_type == ValueMatch:
         logging.info("training ValueScraper")
-        matches: typing.List[ValueMatch]
+        matches: list[ValueMatch]
 
         # if matches have different extractors, we can't find a common scraper
         extractors = set(map(lambda m: m.extractor, matches))
@@ -126,7 +130,7 @@ def train_scraper_for_matches(matches, roots, complexity: int):
         return ValueScraper(selector, extractor)
     elif found_type == DictMatch:
         logging.info("training DictScraper")
-        matches: typing.List[DictMatch]
+        matches: list[DictMatch]
 
         # what if some matches have missing keys? idk
         # by using union of all keys, we'll get errors two lines below to be sure
@@ -145,7 +149,7 @@ def train_scraper_for_matches(matches, roots, complexity: int):
         return DictScraper(scraper_per_key)
     elif found_type == ListMatch:
         logging.info("training ListScraper")
-        matches: typing.List[ListMatch]
+        matches: list[ListMatch]
         logging.info(matches)
 
         # so we have a list of ListMatch objects

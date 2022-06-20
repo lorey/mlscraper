@@ -22,7 +22,11 @@ class TestTrainingSet:
 
 class TestMatch:
     def test_get_matches_dict_basic(self):
-        page_html = "<html><body><h1>test</h1><p>2010</p><div class='footer'>2010</div></body></html>"
+        page_html = (
+            "<html><body>"
+            "<h1>test</h1><p>2010</p><div class='footer'>2010</div>"
+            "</body></html>"
+        )
         s = Sample(Page(page_html), {"h": "test", "year": "2010"})
         matches = s.get_matches()
         assert len(matches) == 2
@@ -43,8 +47,8 @@ class TestMatch:
     def test_get_matches_list_of_dicts(self):
         page_html = (
             "<html><body>"
-            '<div><p class="title">Herr</p><p class="name">Lorey</p></div> '
-            '<div><p class="title">Frau</p><p class="name">Müller</p></div> '
+            '<div><p class="title">Herr</p><p class="name">Lorey</p></div>'
+            '<div><p class="title">Frau</p><p class="name">Müller</p></div>'
             "</body></html>"
         )
         page = Page(page_html)

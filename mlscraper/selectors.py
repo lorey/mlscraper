@@ -1,5 +1,4 @@
 import logging
-import typing
 from itertools import product
 
 from mlscraper.html import Node
@@ -16,7 +15,7 @@ class Selector:
     def select_one(self, node: Node) -> Node:
         raise NotImplementedError()
 
-    def select_all(self, node: Node) -> typing.List[Node]:
+    def select_all(self, node: Node) -> list[Node]:
         raise NotImplementedError()
 
 
@@ -24,7 +23,7 @@ class PassThroughSelector(Selector):
     def select_one(self, node: Node) -> Node:
         return node
 
-    def select_all(self, node: Node) -> typing.List[Node]:
+    def select_all(self, node: Node) -> list[Node]:
         # this does not make sense as we have only one node to pass through
         raise RuntimeError("cannot apply select_all to PassThroughSelector")
 
@@ -48,9 +47,7 @@ class CssRuleSelector(Selector):
         return f"<{self.__class__.__name__} {self.css_rule=}>"
 
 
-def generate_unique_selectors_for_nodes(
-    nodes: typing.List[Node], roots, complexity: int
-):
+def generate_unique_selectors_for_nodes(nodes: list[Node], roots, complexity: int):
     """
     generate a unique selector which only matches the given nodes.
     """
@@ -68,7 +65,7 @@ def generate_unique_selectors_for_nodes(
 
 
 @no_duplicates_generator_decorator
-def generate_selectors_for_nodes(nodes: typing.List[Node], roots, complexity: int):
+def generate_selectors_for_nodes(nodes: list[Node], roots, complexity: int):
     """
     Generate a selector which matches the given nodes.
     """
@@ -97,7 +94,7 @@ def generate_selectors_for_nodes(nodes: typing.List[Node], roots, complexity: in
                 yield CssRuleSelector(css_selector_combined)
 
 
-def _generate_direct_css_selectors_for_nodes(nodes: typing.List[Node]):
+def _generate_direct_css_selectors_for_nodes(nodes: list[Node]):
     logging.info(f"generating direct css selector for nodes ({nodes=})")
     common_classes = set.intersection(*[set(n.classes) for n in nodes])
 

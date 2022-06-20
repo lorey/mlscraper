@@ -1,5 +1,3 @@
-import typing
-
 from mlscraper.html import Node
 from mlscraper.matches import Extractor
 from mlscraper.selectors import Selector
@@ -13,7 +11,7 @@ class Scraper:
 class DictScraper(Scraper):
     scraper_per_key = None
 
-    def __init__(self, scraper_per_key: typing.Dict[str, Scraper]):
+    def __init__(self, scraper_per_key: dict[str, Scraper]):
         self.scraper_per_key = scraper_per_key
 
     def get(self, node: Node):
