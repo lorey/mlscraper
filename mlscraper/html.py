@@ -50,7 +50,7 @@ class Node:
         assert isinstance(item, str), "can only search for str at the moment"
 
         # text
-        for soup_node in self.soup.find_all(text=item):
+        for soup_node in self.soup.find_all(string=item):
             # use parent node as found text is NaviableString and not Tag
             node = self._page._get_node_for_soup(soup_node.parent)
             yield TextMatch(node)
