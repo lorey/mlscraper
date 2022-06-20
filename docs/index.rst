@@ -11,6 +11,7 @@ Welcome to mlscraper's documentation!
    contributing
    authors
    history
+   modules
 
 Indices and tables
 ==================
