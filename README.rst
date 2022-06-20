@@ -2,9 +2,9 @@
 mlscraper: Scrape data from HTML pages automatically
 ==================================================================================
 
-.. image:: https://img.shields.io/github/worklow/status/lorey/mlscraper/tests
+.. image:: https://img.shields.io/github/workflow/status/lorey/mlscraper/Tests
    :alt: CI status
-   :target: https://github.com/lorey/mlscraper/ci
+   :target: https://github.com/lorey/mlscraper/actions
 
 .. image:: https://img.shields.io/pypi/v/mlscraper
    :alt: PyPI version
