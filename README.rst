@@ -2,7 +2,7 @@
 mlscraper: Scrape data from HTML pages automatically
 ==================================================================================
 
-.. image:: https://img.shields.io/github/workflow/status/lorey/mlscraper/Tests
+.. image:: https://img.shields.io/github/workflow/status/lorey/mlscraper/tests
    :alt: CI status
    :target: https://github.com/lorey/mlscraper/actions
 
@@ -19,6 +19,9 @@ instead of manually specifying nodes or css selectors.
 You train it by providing a few examples of your desired output.
 It will then figure out the extraction rules for you automatically
 and afterwards you'll be able to extract data from any new page you provide.
+
+.. image:: .github/how-it-works.png
+   :alt: Image showing how mlscraper turns html into data objects
 
 ----------------
 Background Story
