@@ -6,13 +6,11 @@ import logging
 import typing
 from abc import ABC
 from dataclasses import dataclass
-from itertools import combinations
-from itertools import product
+from functools import cached_property
 
 from bs4 import BeautifulSoup
 from bs4 import NavigableString
 from bs4 import Tag
-from mlscraper.util import powerset_max_length
 
 
 @dataclass
@@ -28,44 +26,6 @@ class TextMatch(Match):
 @dataclass
 class AttributeMatch(Match):
     attr: str = None
-
-
-def _generate_css_selectors_for_node(soup: Tag, complexity: int):
-    """
-    Generate a selector for the given node.
-    :param soup:
-    :return:
-    """
-    assert isinstance(soup, Tag)
-
-    # use id
-    tag_id = soup.attrs.get("id", None)
-    if tag_id:
-        yield "#" + tag_id
-
-    yield soup.name
-
-    # use classes
-    css_classes = soup.attrs.get("class", [])
-    for css_class_combo in powerset_max_length(css_classes, complexity):
-        if css_class_combo:
-            css_clases_str = "".join([f".{css_class}" for css_class in css_class_combo])
-            yield css_clases_str
-            yield soup.name + css_clases_str
-        else:
-            # empty set, no selector
-            pass
-
-    # todo: nth applies to whole selectors
-    #  -> should thus be a step after actual selector generation
-    if isinstance(soup.parent, Tag) and hasattr(soup, "name"):
-        children_tags = [c for c in soup.parent.children if isinstance(c, Tag)]
-        child_index = list(children_tags).index(soup) + 1
-        yield ":nth-child(%d)" % child_index
-
-        children_of_same_type = [c for c in children_tags if c.name == soup.name]
-        child_index = children_of_same_type.index(soup) + 1
-        yield ":nth-of-type(%d)" % child_index
 
 
 class Node:
@@ -111,69 +71,21 @@ class Node:
                 return True
         return False
 
+    @cached_property
+    def parents(self):
+        return [self._page._get_node_for_soup(p) for p in self.soup.parents]
+
     @property
     def classes(self):
         return self.soup.attrs.get("class", [])
 
     @property
+    def id(self):
+        return self.soup.attrs.get("id", None)
+
+    @property
     def tag_name(self):
         return self.soup.name
-
-    def generate_path_selectors(self, complexity: int):
-        """
-        Generate a selector for the path to the given node.
-        :return:
-        """
-        if not isinstance(self.soup, Tag):
-            error_msg = "Only tags can be selected with CSS, %s given" % type(self.soup)
-            raise RuntimeError(error_msg)
-
-        # we have a list of n ancestor notes and n-1 nodes including the last node
-        # the last node must get selected always
-
-        # so we will:
-        # 1) generate all selectors for current node
-        # 2) append possible selectors for the n-1 descendants
-        # starting with all node selectors and increasing number of used descendants
-
-        # remove unique parents as they don't improve selection
-        # body is unique, html is unique, document is bs4 root element
-        parents = [
-            n for n in self.soup.parents if n.name not in ("body", "html", "[document]")
-        ]
-        # print(parents)
-
-        # loop from i=0 to i=len(parents) as we consider all parents
-        parent_node_count_max = min(len(parents), complexity)
-        for parent_node_count in range(parent_node_count_max + 1):
-            logging.info(
-                "generating path selectors with %d parents" % parent_node_count
-            )
-            # generate paths with exactly parent_node_count nodes
-            for parent_nodes_sampled in combinations(parents, parent_node_count):
-                path_sampled = (self.soup,) + parent_nodes_sampled
-                # logging.info(path_sampled)
-
-                # make a list of selector generators for each node in the path
-                # todo limit generated selectors -> huge product
-                selector_generators_for_each_path_node = [
-                    _generate_css_selectors_for_node(n, complexity)
-                    for n in path_sampled
-                ]
-
-                # generator that outputs selector paths
-                # e.g. (div, .wrapper, .main)
-                path_sampled_selectors = product(
-                    *selector_generators_for_each_path_node
-                )
-
-                # create an actual css selector for each selector path
-                # e.g. .main > .wrapper > .div
-                for path_sampled_selector in path_sampled_selectors:
-                    # if paths are not directly connected, i.e. (1)-(2)-3-(4)
-                    #  join must be " " and not " > "
-                    css_selector = " ".join(reversed(path_sampled_selector))
-                    yield css_selector
 
     def select(self, css_selector):
         return [
@@ -183,7 +95,7 @@ class Node:
     def __repr__(self):
         if isinstance(self.soup, NavigableString):
             return f"<{self.__class__.__name__} {self.soup.strip()[:10]=}>"
-        return f"<{self.__class__.__name__} {self.soup.name=} classes={self.soup.get('class', None)}, text={self.soup.text.strip()[:10]}...>"
+        return f"<{self.__class__.__name__} {self.soup.name=} classes={self.soup.get('class', None)}, text={''.join(self.soup.stripped_strings)[:10]}...>"
 
     def __hash__(self):
         return self.soup.__hash__()

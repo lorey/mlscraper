@@ -37,7 +37,7 @@ class ListScraper(Scraper):
         ]
 
     def __repr__(self):
-        return f"<ListScraper {self.scraper=}>"
+        return f"<ListScraper {self.selector=} {self.scraper=}>"
 
 
 class ValueScraper(Scraper):

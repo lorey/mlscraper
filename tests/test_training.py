@@ -1,4 +1,3 @@
-import pytest
 from mlscraper.html import Page
 from mlscraper.matches import TextValueExtractor
 from mlscraper.samples import Sample
@@ -59,6 +58,27 @@ def test_train_scraper_list_of_dicts():
     assert isinstance(value_scraper, ValueScraper)
     assert isinstance(value_scraper.selector, PassThroughSelector)
     assert isinstance(value_scraper.extractor, TextValueExtractor)
+
+
+def test_train_scraper_multipage():
+    training_set = TrainingSet()
+    for items in ["ab", "cd"]:
+        html = b"""
+        <html><body>
+        <div class="target">
+        <ul><li>%s</li><li>%s</li></ul>
+        </div>
+        </body></html>
+        """ % (
+            items[0].encode(),
+            items[1].encode(),
+        )
+        training_set.add_sample(Sample(Page(html), [items[0], items[1]]))
+    scraper = train_scraper(training_set)
+    assert scraper.selector.css_rule == "li"
+    assert scraper.get(
+        Page(b"""<html><body><ul><li>first</li><li>second</li></body></html>""")
+    ) == ["first", "second"]
 
 
 def test_train_scraper_stackoverflow(stackoverflow_samples):
