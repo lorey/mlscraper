@@ -47,7 +47,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "mlscraper"
-copyright = "2020, Karl Lorey"
+copyright = "2022, Karl Lorey"
 author = "Karl Lorey"
 
 # The version info for the project you're documenting, acts as replacement

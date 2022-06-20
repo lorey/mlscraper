@@ -1,5 +1,14 @@
+#
 # project
-papers/
+#
+
+# auto-generated docs
+docs/mlscraper.rst
+docs/modules.rst
+
+#
+# generic
+#
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
