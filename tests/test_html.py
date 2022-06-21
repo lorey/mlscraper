@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from mlscraper.html import _get_root_of_nodes
+from mlscraper.html import HTMLTextMatch
 from mlscraper.html import Page
 from mlscraper.html import selector_matches_nodes
 from mlscraper.matches import AttributeValueExtractor
@@ -7,7 +8,7 @@ from mlscraper.matches import AttributeValueExtractor
 
 def test_get_root_of_nodes():
     soup = BeautifulSoup(
-        '<html><body><div><p id="one"></p><p><span id="two"></span></p></div></body></html>',
+        b'<html><body><div><p id="one"></p><p><span id="two"></span></p></div></body></html>',
         "lxml",
     )
     node_1 = soup.select_one("#one")
@@ -49,13 +50,13 @@ def test_extractor_factory():
 
 def test_equality():
     # we want to make sure that equal html does not result in equality
-    same_html = "<html><body><div><p></p></div></body></html>"
+    same_html = b"<html><body><div><p></p></div></body></html>"
     assert Page(same_html) == Page(same_html)
     assert Page(same_html) is not Page(same_html)
 
 
 def test_select():
-    html = "<html><body><p></p><p></p></body></html>"
+    html = b"<html><body><p></p><p></p></body></html>"
     page = Page(html)
     p_tag_nodes = page.select("p")
     assert len(p_tag_nodes) == 2
@@ -78,7 +79,7 @@ def test_classes():
 
 
 def test_selector_matches_nodes():
-    html = "<html><body><p>1</p><p>2</p></body></html>"
+    html = b"<html><body><p>1</p><p>2</p></body></html>"
     page = Page(html)
 
     p_tags = page.select("p")
@@ -90,3 +91,11 @@ def test_selector_matches_nodes():
     assert not selector_matches_nodes(
         page, "p", p_tags_reversed
     ), "matches reversed order"
+
+
+def test_find_text_with_whitespace():
+    html = b"<html><body><p>    whitespace  \n\t </p></body></html>"
+    page = Page(html)
+    html_matches = page.find_all("whitespace")
+    assert len(html_matches) == 1
+    assert isinstance(html_matches[0], HTMLTextMatch)

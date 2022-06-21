@@ -2,7 +2,9 @@
 Encapsulation of html-related functionality.
 BeautifulSoup should only get used here.
 """
+import html
 import logging
+import re
 from abc import ABC
 from dataclasses import dataclass
 from functools import cached_property
@@ -13,17 +15,17 @@ from bs4 import Tag
 
 
 @dataclass
-class Match(ABC):
+class HTMLMatch(ABC):
     node: "Node" = None
 
 
 @dataclass
-class TextMatch(Match):
+class HTMLTextMatch(HTMLMatch):
     pass
 
 
 @dataclass
-class AttributeMatch(Match):
+class HTMLAttributeMatch(HTMLMatch):
     attr: str = None
 
 
@@ -43,24 +45,27 @@ class Node:
     def text(self):
         return self.soup.text
 
-    def find_all(self, item) -> list[Match]:
+    def find_all(self, item) -> list[HTMLMatch]:
         return list(self._generate_find_all(item))
 
     def _generate_find_all(self, item):
         assert isinstance(item, str), "can only search for str at the moment"
 
         # text
-        for soup_node in self.soup.find_all(string=item):
+        # - since text matches including whitespace, a regex is used
+        for soup_node in self.soup.find_all(
+            string=re.compile(r"\s*%s\s*" % html.escape(item))
+        ):
             # use parent node as found text is NaviableString and not Tag
             node = self._page._get_node_for_soup(soup_node.parent)
-            yield TextMatch(node)
+            yield HTMLTextMatch(node)
 
         # attributes
         for soup_node in self.soup.find_all():
             for attr in soup_node.attrs:
                 if soup_node[attr] == item:
                     node = self._page._get_node_for_soup(soup_node)
-                    yield AttributeMatch(node, attr)
+                    yield HTMLAttributeMatch(node, attr)
 
         # todo implement other find methods
 

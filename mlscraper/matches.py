@@ -6,11 +6,11 @@ import typing
 from functools import cached_property
 from itertools import combinations
 
-from mlscraper.html import AttributeMatch
 from mlscraper.html import get_relative_depth
 from mlscraper.html import get_root_node
+from mlscraper.html import HTMLAttributeMatch
+from mlscraper.html import HTMLTextMatch
 from mlscraper.html import Node
-from mlscraper.html import TextMatch
 
 
 class Match:
@@ -61,7 +61,7 @@ class TextValueExtractor(Extractor):
     """
 
     def extract(self, node: Node):
-        return node.soup.text
+        return node.soup.text.strip()
 
     def __repr__(self):
         return f"<{self.__class__.__name__}>"
@@ -151,9 +151,9 @@ def generate_all_value_matches(
     logging.info(f"generating all value matches ({node=}, {item=})")
     for html_match in node.find_all(item):
         matched_node = html_match.node
-        if isinstance(html_match, TextMatch):
+        if isinstance(html_match, HTMLTextMatch):
             extractor = TextValueExtractor()
-        elif isinstance(html_match, AttributeMatch):
+        elif isinstance(html_match, HTMLAttributeMatch):
             extractor = AttributeValueExtractor(html_match.attr)
         else:
             raise RuntimeError(
