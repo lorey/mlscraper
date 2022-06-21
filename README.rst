@@ -50,10 +50,15 @@ After you've defined the data you want to scrape, mlscraper will:
 Getting started
 ---------------
 
-Install the latest version of mlscraper via :code:`pip install git+https://github.com/lorey/mlscraper#egg=mlscraper`.
+mlscraper is currently short before version 1.0.
+If you want to check the new release, use :code:`pip install --pre mlscraper` to test the release candidate.
+You can also install the latest (unstable) development version of mlscraper
+via :code:`pip install git+https://github.com/lorey/mlscraper#egg=mlscraper`,
+e.g. to check new features or to see if a bug has been fixed already.
 Please note that until the 1.0 release :code:`pip install mlscraper` will return an outdated 0.* version.
-In both cases, you can then import it via `mlscraper`.
-Check the tests for usage until detailed documentation arrives.
+Check the examples_ directory for usage examples until further documentation arrives.
+
+.. _examples: examples/
 
 -----------
 Development
