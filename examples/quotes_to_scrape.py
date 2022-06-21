@@ -29,6 +29,7 @@ def main():
     resp = requests.get('http://quotes.toscrape.com/author/J-K-Rowling')
     result = scraper.get(Page(resp.content))
     print(result)
+    # returns {'name': 'J.K. Rowling', 'born': 'July 31, 1965'}
 
 
 if __name__ == '__main__':
