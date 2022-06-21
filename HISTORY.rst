@@ -3,8 +3,9 @@ History
 =======
 
 ------------------
-UPCOMING
+1.0.0 (soon)
 ------------------
+
 * scrapers can now extract arbitrary data structures
   including list (ListScraper), dict (DictScraper), and string (ValueScraper) objects.
 * scrapers now work for multiple pages by default.
