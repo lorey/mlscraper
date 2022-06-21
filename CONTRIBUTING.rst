@@ -109,10 +109,19 @@ Deploying
 
 A reminder for the maintainers on how to deploy.
 Make sure all your changes are committed (including an entry in HISTORY.rst).
+Before testing one final time, make sure to run :code:`make clean` to avoid any cache-related issues.
+Change the version in HISTORY.rst and mlscraper.__version__.
 Then run::
 
-$ bump2version patch # possible: major / minor / patch
+$ git add -u
+$ git commit -m "Bump version"
+$ git tag -a v0.0.0 -m "v0.0.0"
 $ git push
 $ git push --tags
 
 Github will then deploy the package to PyPI.
+
+Other
+-----
+
+* To compile requirements, run :code:`pip install pip-compile-multi` and :code:`pip-compile-multi`
