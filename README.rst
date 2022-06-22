@@ -62,6 +62,7 @@ Please note that until the 1.0 release :code:`pip install mlscraper` will return
 To get started with a simple scraped, check out a basic sample below.
 
 .. code-block:: python
+
     import requests
     from mlscraper.html import Page
     from mlscraper.samples import Sample, TrainingSet
