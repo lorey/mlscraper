@@ -1,20 +1,25 @@
-from bs4 import BeautifulSoup
-from mlscraper.html import _get_root_of_nodes
+from mlscraper.html import get_root_node
 from mlscraper.html import HTMLExactTextMatch
 from mlscraper.html import Page
 from mlscraper.html import selector_matches_nodes
 from mlscraper.matches import AttributeValueExtractor
 
 
-def test_get_root_of_nodes():
-    soup = BeautifulSoup(
-        b'<html><body><div><p id="one"></p><p><span id="two"></span></p></div></body></html>',
-        "lxml",
-    )
-    node_1 = soup.select_one("#one")
-    node_2 = soup.select_one("#two")
-    root = _get_root_of_nodes([node_1, node_2])
-    assert root == soup.select_one("div")
+def test_get_root_nodes():
+    html = b'<html><body><div><p id="one"></p><p><span id="two"></span></p></div></body></html>'
+    page = Page(html)
+    node_1 = page.select("#one")[0]
+    node_2 = page.select("#two")[0]
+    root = get_root_node([node_1, node_2])
+    assert root == page.select("div")[0]
+
+
+def test_node_set():
+    html = b"<html><body><p>test</p></body></html>"
+    page = Page(html)
+    node_1 = page.select("p")[0]
+    node_2 = node_1.parent.select("p")[0]
+    assert node_1.parent == node_2.parent
 
 
 class TestPage:

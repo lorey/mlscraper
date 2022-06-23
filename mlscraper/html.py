@@ -11,7 +11,6 @@ from functools import cached_property
 
 from bs4 import BeautifulSoup
 from bs4 import NavigableString
-from bs4 import Tag
 
 
 @dataclass
@@ -35,13 +34,22 @@ class Node:
 
     def __init__(self, soup, page: "Page"):
         self.soup = soup
+        self._hash = soup.__hash__()
         self._page = page
 
     @property
     def root(self):
         return self._page
 
-    @property
+    @cached_property
+    def depth(self):
+        return self.parent.depth
+
+    @cached_property
+    def parent(self):
+        return self._page._get_node_for_soup(self.soup.parent)
+
+    @cached_property
     def text(self):
         return self.soup.text
 
@@ -91,6 +99,10 @@ class Node:
     def tag_name(self):
         return self.soup.name
 
+    @property
+    def html_attributes(self):
+        return self.soup.attrs
+
     def select(self, css_selector):
         return [
             self._page._get_node_for_soup(n) for n in self.soup.select(css_selector)
@@ -106,7 +118,8 @@ class Node:
         )
 
     def __hash__(self):
-        return self.soup.__hash__()
+        return self._hash
+        # return self.soup.__hash__()
         # return super().__hash__()
 
     def __eq__(self, other):
@@ -129,6 +142,10 @@ class Page(Node):
 
         super().__init__(soup, self)
 
+    @property
+    def depth(self):
+        return 0
+
     def _get_node_for_soup(self, soup) -> Node:
         if soup not in self._node_registry:
             self._node_registry[soup] = Node(soup, self)
@@ -138,41 +155,18 @@ class Page(Node):
 def get_root_node(nodes: list[Node]) -> Node:
     pages = [n._page for n in nodes]
     assert len(set(pages)) == 1, "different pages found, cannot get a root"
-    root = _get_root_of_nodes(n.soup for n in nodes)
-    return pages[0]._get_node_for_soup(root)
 
+    # generate parent paths from top to bottom
+    # [elem, parent, ancestor, root]
+    parent_paths = [reversed([n] + n.parents) for n in nodes]
 
-def _get_root_of_nodes(soups):
-    soups = list(soups)
-    assert all(isinstance(n, Tag) for n in soups)
-
-    # root can be node itself, so it has to be added
-    parent_paths_of_nodes = [[node] + list(node.parents) for node in soups]
-
-    # paths are needed from top to bottom
-    parent_paths_rev = [list(reversed(pp)) for pp in parent_paths_of_nodes]
-    try:
-        ancestor = _get_root_of_paths(parent_paths_rev)
-    except RuntimeError as e:
-        raise RuntimeError(f"No common ancestor: {soups}") from e
-    return ancestor
-
-
-def _get_root_of_paths(paths):
-    """
-    Computes the first common ancestor for list of paths.
-    :param paths: list of list of nodes from top to bottom
-    :return: first common index or RuntimeError
-    """
-    assert paths
-    assert all(p for p in paths)
-
-    # go through paths one by one, starting from bottom
-    for nodes in reversed(list(zip(*paths))):
-        if len(set(nodes)) == 1:
-            return nodes[0]
-    logging.info("failed to find ancestor for : %s", paths)
-    raise RuntimeError("No common ancestor")
+    # start looping from bottom to top
+    # zip automatically uses common length
+    # -> last element is the first one, where len(nodes) roots to compare exist
+    for layer_nodes in reversed(list(zip(*parent_paths))):
+        if len(set(layer_nodes)) == 1:
+            return layer_nodes[0]
+    raise RuntimeError("no root found")
 
 
 def get_relative_depth(node: Node, root: Node):

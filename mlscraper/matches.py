@@ -6,7 +6,6 @@ import typing
 from functools import cached_property
 from itertools import combinations
 
-from mlscraper.html import get_relative_depth
 from mlscraper.html import get_root_node
 from mlscraper.html import HTMLAttributeMatch
 from mlscraper.html import HTMLExactTextMatch
@@ -40,10 +39,10 @@ class Match:
             or other_match.root.has_parent(self.root)
         )
 
-    @cached_property
+    @property
     def depth(self):
         # depth of root compared to document
-        return get_relative_depth(self.root, self.root.root)
+        return self.root.depth
 
 
 class Extractor:
@@ -159,7 +158,8 @@ def generate_all_value_matches(
             yield ValueMatch(matched_node, extractor)
         else:
             logging.warning(
-                f"Cannot deal with HTMLMatch type, ignoring ({html_match=}, {type(html_match)=}))"
+                "Cannot deal with HTMLMatch type, ignoring "
+                f"({html_match=}, {type(html_match)=}))"
             )
 
 
