@@ -36,7 +36,7 @@ class CssRuleSelector(Selector):
         selection = node.select(self.css_rule)
         if not selection:
             raise AssertionError(
-                f"css rule does not match on node ({self.css_rule=}, {node=})"
+                f"css rule does not match any node ({self.css_rule=}, {node=})"
             )
         return selection[0]
 
@@ -98,22 +98,50 @@ def _generate_direct_css_selectors_for_nodes(nodes: list[Node]):
     logging.info(f"generating direct css selector for nodes ({nodes=})")
     common_classes = set.intersection(*[set(n.classes) for n in nodes])
 
+    # check for same tag name
     is_same_tag = len({n.tag_name for n in nodes}) == 1
     common_tag_name = nodes[0].tag_name
     yield common_tag_name
 
+    # check for common id
     common_ids = {n.id for n in nodes}
     is_same_id = len(common_ids) == 1
     if is_same_id and None not in common_ids:
         yield "#" + first(common_ids)
 
+    # check for common classes
     for class_combination in powerset(common_classes):
         if class_combination:
             logging.info(f"- generating selector for ({class_combination=})")
             css_selector = "".join(map(lambda cl: "." + cl, class_combination))
             yield css_selector
+
+            # if same tag name, also yield tag_name + selector
             if is_same_tag:
                 yield common_tag_name + css_selector
         else:
             # empty combination -> ignore
             pass
+
+    # check for common attributes
+    # see: https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors
+    if common_tag_name:
+        common_attributes = set.intersection(
+            *[set(n.html_attributes.keys()) for n in nodes]
+        )
+        common_attributes_filtered = [
+            ca for ca in common_attributes if ca not in ["id", "class", "rel"]
+        ]
+        for common_attribute in common_attributes_filtered:
+            yield f"{common_tag_name}[{common_attribute}]"
+
+            # check for common attribute values
+            logging.info("attribute: %s", common_attribute)
+            logging.info(
+                "attribute values: %s",
+                [n.html_attributes[common_attribute] for n in nodes],
+            )
+            attribute_values = {n.html_attributes[common_attribute] for n in nodes}
+            if len(attribute_values) == 1:
+                common_attribute_value = first(attribute_values)
+                yield f'{common_tag_name}[{common_attribute}="{common_attribute_value}"]'

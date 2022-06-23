@@ -1,4 +1,5 @@
 from mlscraper.html import Page
+from mlscraper.selectors import _generate_direct_css_selectors_for_nodes
 from mlscraper.selectors import generate_unique_selectors_for_nodes
 
 
@@ -40,10 +41,25 @@ class TestGenerateUniqueSelectorsForNodes:
         )
         node = page.select("#target")[0]
         selectors = get_css_selectors_for_node(node)
-        assert selectors == ["#target"]
+        assert "#target" in selectors
 
     def test_multi_parents(self):
         page = Page(b'<html><body><div id="target"><p>test</p></div><div><p></p></div>')
         node = page.select("#target")[0].select("p")[0]
         selectors = get_css_selectors_for_node(node)
         assert "#target p" in selectors
+
+
+class TestGenerateDirectCssSelectorsForNodes:
+    def test_itemprop_selector(self):
+        html = b"""<html><body>
+        <div itemprop="user">lorey</div>
+        <div itemprop="user">jonashaag</div>
+        </body></html>"""
+        page = Page(html)
+        direct_css_selectors = list(
+            _generate_direct_css_selectors_for_nodes(page.select("div"))
+        )
+
+        assert "div[itemprop]" in direct_css_selectors
+        assert 'div[itemprop="user"]' in direct_css_selectors
