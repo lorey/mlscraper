@@ -30,6 +30,7 @@ class TestGenerateUniqueSelectorsForNodes:
 
         assert ".test" in selectors_found
         assert "p.test" in selectors_found
+        assert "body > p.test" in selectors_found
 
     def test_ids(self):
         page = Page(

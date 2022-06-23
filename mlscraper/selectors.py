@@ -81,21 +81,28 @@ def generate_selectors_for_nodes(nodes: list[Node], roots, complexity: int):
     for direct_css_selector in direct_css_selectors:
         yield CssRuleSelector(direct_css_selector)
 
-    parents_of_nodes_below_roots = [
-        [p for p in n.parents if p.has_parent(r) and p.tag_name not in ["html", "body"]]
+    ancestors_below_roots = [
+        [p for p in n.parents if p.has_parent(r) and p.tag_name != "html"]
         for n, r in zip(nodes, roots)
     ]
-    for parent_nodes in product(*parents_of_nodes_below_roots):
-        for parent_selector_raw in _generate_direct_css_selectors_for_nodes(
-            parent_nodes
+    for ancestors in product(*ancestors_below_roots):
+        for ancestor_selector_raw in _generate_direct_css_selectors_for_nodes(
+            ancestors
         ):
+            # generate refinement selectors for parents
+            # e.g. if selectivity of child selector is not enough
             for css_selector_raw in direct_css_selectors:
-                css_selector_combined = parent_selector_raw + " " + css_selector_raw
+                css_selector_combined = ancestor_selector_raw + " " + css_selector_raw
                 yield CssRuleSelector(css_selector_combined)
+
+                # make parent selector
+                if all(node.parent == parent for node, parent in zip(nodes, ancestors)):
+                    yield CssRuleSelector(
+                        f"{ancestor_selector_raw} > {css_selector_raw}"
+                    )
 
 
 def _generate_direct_css_selectors_for_nodes(nodes: list[Node]):
-    logging.info(f"generating direct css selector for nodes ({nodes=})")
     common_classes = set.intersection(*[set(n.classes) for n in nodes])
 
     # check for same tag name
@@ -112,7 +119,6 @@ def _generate_direct_css_selectors_for_nodes(nodes: list[Node]):
     # check for common classes
     for class_combination in powerset(common_classes):
         if class_combination:
-            logging.info(f"- generating selector for ({class_combination=})")
             css_selector = "".join(map(lambda cl: "." + cl, class_combination))
             yield css_selector
 
@@ -136,11 +142,6 @@ def _generate_direct_css_selectors_for_nodes(nodes: list[Node]):
             yield f"{common_tag_name}[{common_attribute}]"
 
             # check for common attribute values
-            logging.info("attribute: %s", common_attribute)
-            logging.info(
-                "attribute values: %s",
-                [n.html_attributes[common_attribute] for n in nodes],
-            )
             attribute_values = {n.html_attributes[common_attribute] for n in nodes}
             if len(attribute_values) == 1:
                 common_attribute_value = first(attribute_values)
