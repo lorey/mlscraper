@@ -103,12 +103,31 @@ def generate_selectors_for_nodes(nodes: list[Node], roots, complexity: int):
 
 
 def _generate_direct_css_selectors_for_nodes(nodes: list[Node]):
+    # pseudo classes apply to already generated selectors
+    # and can thus be applied in retrospect
+
+    # see: https://developer.mozilla.org/en-US/docs/Web/CSS/:nth-child
+    for css_selector in _generate_direct_css_selectors_for_nodes_without_pseudo(nodes):
+        yield css_selector
+
+    # pull to the end as far as possible
+    for css_selector in _generate_direct_css_selectors_for_nodes_without_pseudo(nodes):
+        if all(n.tag_name not in ["html", "body"] for n in nodes):
+            child_indexes = [n.parent.select(css_selector).index(n) for n in nodes]
+            if len(set(child_indexes)) == 1:
+                # nth is indexed with 1
+                nth = 1 + child_indexes[0]
+                yield f"{css_selector}:nth-child({nth})"
+
+
+def _generate_direct_css_selectors_for_nodes_without_pseudo(nodes: list[Node]):
     common_classes = set.intersection(*[set(n.classes) for n in nodes])
 
     # check for same tag name
     is_same_tag = len({n.tag_name for n in nodes}) == 1
-    common_tag_name = nodes[0].tag_name
-    yield common_tag_name
+    common_tag_name = nodes[0].tag_name if is_same_tag else None
+    if common_tag_name:
+        yield common_tag_name
 
     # check for common id
     common_ids = {n.id for n in nodes}
@@ -123,7 +142,7 @@ def _generate_direct_css_selectors_for_nodes(nodes: list[Node]):
             yield css_selector
 
             # if same tag name, also yield tag_name + selector
-            if is_same_tag:
+            if common_tag_name:
                 yield common_tag_name + css_selector
         else:
             # empty combination -> ignore

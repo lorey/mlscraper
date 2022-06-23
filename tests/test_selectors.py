@@ -32,6 +32,19 @@ class TestGenerateUniqueSelectorsForNodes:
         assert "p.test" in selectors_found
         assert "body > p.test" in selectors_found
 
+    def test_nth(self):
+        html = b"""<html><body>
+        <ul><li>target</li><li>noise</li></ul>
+        <ul><li>target</li><li>noise</li></ul>
+        </body></html>"""
+        page = Page(html)
+        first_li_tags = [ul.select("li")[0] for ul in page.select("ul")]
+        unique_selectors = [
+            s.css_rule
+            for s in generate_unique_selectors_for_nodes(first_li_tags, None, 100)
+        ]
+        assert "li:nth-child(1)" in unique_selectors
+
     def test_ids(self):
         page = Page(
             b"""
@@ -64,3 +77,13 @@ class TestGenerateDirectCssSelectorsForNodes:
 
         assert "div[itemprop]" in direct_css_selectors
         assert 'div[itemprop="user"]' in direct_css_selectors
+
+    def test_nth(self):
+        html = b"""<html><body>
+        <ul><li>target</li><li>noise</li></ul>
+        <ul><li>target</li><li>noise</li></ul>
+        </body></html>"""
+        page = Page(html)
+        first_li_tags = [ul.select("li")[0] for ul in page.select("ul")]
+        unique_selectors = list(_generate_direct_css_selectors_for_nodes(first_li_tags))
+        assert "li:nth-child(1)" in unique_selectors
