@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 from mlscraper.html import _get_root_of_nodes
-from mlscraper.html import HTMLTextMatch
+from mlscraper.html import HTMLExactTextMatch
 from mlscraper.html import Page
 from mlscraper.html import selector_matches_nodes
 from mlscraper.matches import AttributeValueExtractor
@@ -98,4 +98,13 @@ def test_find_text_with_whitespace():
     page = Page(html)
     html_matches = page.find_all("whitespace")
     assert len(html_matches) == 1
-    assert isinstance(html_matches[0], HTMLTextMatch)
+    assert isinstance(html_matches[0], HTMLExactTextMatch)
+
+
+def test_find_text_with_noise():
+    html = b"<html><body><p>bla karl bla</p></body></html>"
+    page = Page(html)
+    assert all(
+        not isinstance(html_match, HTMLExactTextMatch)
+        for html_match in page.find_all("karl")
+    )

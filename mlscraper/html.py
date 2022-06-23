@@ -20,7 +20,7 @@ class HTMLMatch(ABC):
 
 
 @dataclass
-class HTMLTextMatch(HTMLMatch):
+class HTMLExactTextMatch(HTMLMatch):
     pass
 
 
@@ -54,11 +54,11 @@ class Node:
         # text
         # - since text matches including whitespace, a regex is used
         for soup_node in self.soup.find_all(
-            string=re.compile(r"\s*%s\s*" % html.escape(item))
+            string=re.compile(r"^\s*%s\s*$" % html.escape(item))
         ):
             # use parent node as found text is NaviableString and not Tag
             node = self._page._get_node_for_soup(soup_node.parent)
-            yield HTMLTextMatch(node)
+            yield HTMLExactTextMatch(node)
 
         # attributes
         for soup_node in self.soup.find_all():

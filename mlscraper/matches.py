@@ -9,7 +9,7 @@ from itertools import combinations
 from mlscraper.html import get_relative_depth
 from mlscraper.html import get_root_node
 from mlscraper.html import HTMLAttributeMatch
-from mlscraper.html import HTMLTextMatch
+from mlscraper.html import HTMLExactTextMatch
 from mlscraper.html import Node
 
 
@@ -151,15 +151,16 @@ def generate_all_value_matches(
     logging.info(f"generating all value matches ({node=}, {item=})")
     for html_match in node.find_all(item):
         matched_node = html_match.node
-        if isinstance(html_match, HTMLTextMatch):
+        if isinstance(html_match, HTMLExactTextMatch):
             extractor = TextValueExtractor()
+            yield ValueMatch(matched_node, extractor)
         elif isinstance(html_match, HTMLAttributeMatch):
             extractor = AttributeValueExtractor(html_match.attr)
+            yield ValueMatch(matched_node, extractor)
         else:
-            raise RuntimeError(
-                f"unknown match type ({html_match=}, {type(html_match)=})"
+            logging.warning(
+                f"Cannot deal with HTMLMatch type, ignoring ({html_match=}, {type(html_match)=}))"
             )
-        yield ValueMatch(matched_node, extractor)
 
 
 def is_disjoint_match_combination(matches):
