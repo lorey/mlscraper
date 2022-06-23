@@ -1,3 +1,4 @@
+import logging
 import typing
 from itertools import product
 
@@ -9,6 +10,10 @@ from mlscraper.matches import ListMatch
 
 
 class ItemStructureException(Exception):
+    pass
+
+
+class NoMatchFoundException(Exception):
     pass
 
 
@@ -24,7 +29,16 @@ class Sample:
         # todo: fix creating new sample objects, maybe by using Item class?
 
         if isinstance(self.value, str):
-            return list(generate_all_value_matches(self.page, self.value))
+            value_matches = list(generate_all_value_matches(self.page, self.value))
+            logging.info(
+                f"found {len(value_matches)=} on page ({self.value=}, {self.page=})"
+            )
+            logging.info(f"{value_matches=}")
+            if not value_matches:
+                raise NoMatchFoundException(
+                    f"No match found on page ({self.page=}, {self.value=})"
+                )
+            return value_matches
 
         if isinstance(self.value, list):
             matches_by_value = [Sample(self.page, v).get_matches() for v in self.value]
