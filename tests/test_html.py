@@ -102,8 +102,10 @@ def test_find_text_with_whitespace():
     html = b"<html><body><p>    whitespace  \n\t </p></body></html>"
     page = Page(html)
     html_matches = page.find_all("whitespace")
-    assert len(html_matches) == 1
-    assert isinstance(html_matches[0], HTMLExactTextMatch)
+
+    # should match p, body, html (and document)
+    assert len(html_matches) == 4
+    assert all(isinstance(hm, HTMLExactTextMatch) for hm in html_matches)
 
 
 def test_find_text_with_noise():

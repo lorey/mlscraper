@@ -61,12 +61,15 @@ class Node:
 
         # text
         # - since text matches including whitespace, a regex is used
-        for soup_node in self.soup.find_all(
-            string=re.compile(r"^\s*%s\s*$" % html.escape(item))
-        ):
+        target_regex = re.compile(r"^\s*%s\s*$" % html.escape(item))
+        for soup_node in self.soup.find_all(string=target_regex):
             # use parent node as found text is NaviableString and not Tag
             node = self._page._get_node_for_soup(soup_node.parent)
             yield HTMLExactTextMatch(node)
+
+            for p in node.parents:
+                if p.text.strip() == node.text.strip():
+                    yield HTMLExactTextMatch(p)
 
         # attributes
         for soup_node in self.soup.find_all():
