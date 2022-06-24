@@ -5,6 +5,7 @@ from itertools import product
 from mlscraper.html import Page
 from mlscraper.matches import DictMatch
 from mlscraper.matches import generate_all_value_matches
+from mlscraper.matches import is_dimensions_match
 from mlscraper.matches import is_disjoint_match_combination
 from mlscraper.matches import ListMatch
 
@@ -29,7 +30,13 @@ class Sample:
         # todo: fix creating new sample objects, maybe by using Item class?
 
         if isinstance(self.value, str):
+            # generate all matches
             value_matches = list(generate_all_value_matches(self.page, self.value))
+
+            # filter out dimensions like width/height
+            value_matches = [vm for vm in value_matches if not is_dimensions_match(vm)]
+
+            # raise if not found
             logging.info(
                 f"found {len(value_matches)=} on page ({self.value=}, {self.page=})"
             )

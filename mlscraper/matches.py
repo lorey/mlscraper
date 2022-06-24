@@ -226,3 +226,13 @@ def is_disjoint_match_combination(matches):
     Check if the given matches have no overlap.
     """
     return all(not m1.has_overlap(m2) for m1, m2 in combinations(matches, 2))
+
+
+def is_dimensions_match(m: Match):
+    if not isinstance(m, ValueMatch):
+        return False
+
+    if not isinstance(m.extractor, AttributeValueExtractor):
+        return False
+
+    return m.extractor.attr in ["width", "height"]
