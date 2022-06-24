@@ -93,3 +93,66 @@ def test_train_scraper_stackoverflow(stackoverflow_samples):
     scraping_result = scraper.get(stackoverflow_samples[0].page)
     scraping_sample = stackoverflow_samples[0].value
     assert scraping_result == scraping_sample
+
+
+GITHUB_PROFILES = {
+    "lorey": {
+        "name": "Karl Lorey",
+        "username": "lorey",
+        "location": "Berlin, Germany",
+        "url": "https://karllorey.com",
+        "company": "@loreyventures",
+        "followers": "197",
+        "following": "243",
+    },
+    "jonashaag": {
+        "name": "Jonas Haag",
+        "username": "jonashaag",
+        "location": "Karlsruhe, Germany",
+        "url": "https://de.linkedin.com/in/haag",
+        "company": "@Quantco",
+        "followers": "329",
+        "following": "20",
+    },
+    "siboehm": {
+        "name": "Simon Boehm",
+        "username": "siboehm",
+        "location": "Erlangen, Germany",
+        "url": "http://siboehm.com",
+        "company": "AMD",
+        "followers": "87",
+        "following": "27",
+    },
+}
+
+
+# @pytest.mark.skip("missing selectors")
+def test_train_scraper_github():
+    keys_to_test = [
+        "name",
+        "username",
+        "company",
+        "location",
+        "url",
+        "followers",
+        "following",
+    ]
+
+    def profile_as_page(login):
+        with open(f"tests/static/github/{login}.html", "rb") as file:
+            return Page(file.read())
+
+    def sample_data_for_profile(login):
+        return {k: v for k, v in GITHUB_PROFILES[login].items() if k in keys_to_test}
+
+    training_set = TrainingSet()
+    for login in ["lorey", "siboehm"]:
+        sample = Sample(profile_as_page(login), sample_data_for_profile(login))
+        training_set.add_sample(sample)
+
+    # train
+    scraper = train_scraper(training_set)
+
+    login_target = "jonashaag"
+    page_target = profile_as_page(login_target)
+    assert scraper.get(page_target) == sample_data_for_profile(login_target)
