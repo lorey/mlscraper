@@ -34,8 +34,8 @@ class Node:
 
     def __init__(self, soup, page: "Page"):
         self.soup = soup
-        self._hash = soup.__hash__()
         self._page = page
+        self._hash = None
 
     @property
     def root(self):
@@ -121,6 +121,8 @@ class Node:
         )
 
     def __hash__(self):
+        if not self._hash:
+            self._hash = self.soup.__hash__()
         return self._hash
         # return self.soup.__hash__()
         # return super().__hash__()
