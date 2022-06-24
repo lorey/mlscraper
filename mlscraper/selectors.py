@@ -121,8 +121,6 @@ def _generate_direct_css_selectors_for_nodes(nodes: list[Node]):
 
 
 def _generate_direct_css_selectors_for_nodes_without_pseudo(nodes: list[Node]):
-    common_classes = set.intersection(*[set(n.classes) for n in nodes])
-
     # check for same tag name
     is_same_tag = len({n.tag_name for n in nodes}) == 1
     common_tag_name = nodes[0].tag_name if is_same_tag else None
@@ -136,6 +134,7 @@ def _generate_direct_css_selectors_for_nodes_without_pseudo(nodes: list[Node]):
         yield "#" + first(common_ids)
 
     # check for common classes
+    common_classes = set.intersection(*[set(n.classes) for n in nodes])
     for class_combination in powerset(common_classes):
         if class_combination:
             css_selector = "".join(map(lambda cl: "." + cl, class_combination))

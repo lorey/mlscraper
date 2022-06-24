@@ -24,50 +24,53 @@ class NoScraperFoundException(TrainingException):
     pass
 
 
-def train_scraper(training_set: TrainingSet):
+def get_match_combination_priority(matches):
+    # check for similarity between matches
+    return sum(m1.get_similarity_to(m2) for m1, m2 in combinations(matches, 2))
+
+
+def train_scraper(training_set: TrainingSet, complexity=100):
     """
     Train a scraper able to extract the given training data.
     """
+
     logging.info(f"training {training_set=}")
 
-    sample_matches = [s.get_matches() for s in training_set.item.samples]
     logging.info(
         "number of matches found per sample: %s",
         [(s, len(s.get_matches())) for s in training_set.item.samples],
     )
-    roots = [s.page for s in training_set.item.samples]
-    match_combinations = [mc for mc in product(*sample_matches)]
+
+    sample_matches = [
+        sorted(s.get_matches(), key=lambda m: m.span)[:100]
+        for s in training_set.item.samples
+    ]
+    match_combinations = list(product(*sample_matches))
     logging.info(f"Trying {len(match_combinations)=}")
 
     # to train quicker, we'll start with combinations that have a high depth
     # this prefers matches, that have a deep root
     # and are thus closer to each other
-    match_combinations_by_depth = sorted(
-        match_combinations, key=lambda mc: sum(m.depth for m in mc), reverse=True
+    match_combinations_prioritized = sorted(
+        match_combinations, key=get_match_combination_priority, reverse=True
     )
-    # todo compute selectivity of classes to use selective ones first
-    # todo cache selectors of node combinations
-    #  to avoid re-selecting after increasing complexity
-    for complexity in range(3):
-        for match_combination in match_combinations_by_depth:
-            progress_ratio = match_combinations.index(match_combination) / len(
-                match_combinations
+
+    for match_combination in match_combinations_prioritized:
+        progress_ratio = match_combinations_prioritized.index(match_combination) / len(
+            match_combinations_prioritized
+        )
+        logging.info(f"progress {progress_ratio}")
+        try:
+            logging.info(f"trying to train scraper for matches ({match_combination=})")
+            roots = [s.page for s in training_set.item.samples]
+            scraper = train_scraper_for_matches(match_combination, roots, complexity)
+            return scraper
+        except NoScraperFoundException:
+            logging.info(
+                "no scraper found "
+                "for complexity and match_combination "
+                f"({complexity=}, {match_combination=})"
             )
-            logging.info(f"progress {progress_ratio}")
-            try:
-                logging.info(
-                    f"trying to train scraper for matches ({match_combination=})"
-                )
-                scraper = train_scraper_for_matches(
-                    match_combination, roots, complexity
-                )
-                return scraper
-            except NoScraperFoundException:
-                logging.info(
-                    "no scraper found "
-                    "for complexity and match_combination "
-                    f"({complexity=}, {match_combination=})"
-                )
     raise NoScraperFoundException("did not find scraper")
 
 
@@ -139,12 +142,13 @@ def train_scraper_for_matches(matches, roots, complexity: int):
         # train scraper for each key of dict
         # matches are the matches for the keys
         # roots are the original roots(?)
-        scraper_per_key = {
-            k: train_scraper_for_matches(
-                [m.match_by_key[k] for m in matches], roots, complexity
-            )
-            for k in keys
-        }
+        scraper_per_key = {}
+        for k in keys:
+            matches_per_key = [m.match_by_key[k] for m in matches]
+            logging.info(f"training key for DictScraper ({k=})")
+            logging.info(f"matches for key: {matches_per_key=}")
+            scraper = train_scraper_for_matches(matches_per_key, roots, complexity)
+            scraper_per_key[k] = scraper
         logging.info(f"found DictScraper ({scraper_per_key=})")
         return DictScraper(scraper_per_key)
     elif found_type == ListMatch:

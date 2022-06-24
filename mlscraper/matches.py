@@ -5,7 +5,9 @@ import logging
 import typing
 from functools import cached_property
 from itertools import combinations
+from itertools import product
 
+from mlscraper.html import get_relative_depth
 from mlscraper.html import get_root_node
 from mlscraper.html import HTMLAttributeMatch
 from mlscraper.html import HTMLExactTextMatch
@@ -41,8 +43,21 @@ class Match:
 
     @property
     def depth(self):
+        """
+        How deep inside the DOM the match is.
+        """
         # depth of root compared to document
         return self.root.depth
+
+    @property
+    def span(self):
+        """
+        Heuristic for how big of a subtree the match spans.
+        """
+        raise NotImplementedError()
+
+    def get_similarity_to(self, match: "Match"):
+        raise NotImplementedError()
 
 
 class Extractor:
@@ -110,6 +125,24 @@ class DictMatch(Match):
         match_roots = [m.root for m in self.match_by_key.values()]
         return get_root_node(match_roots)
 
+    @cached_property
+    def span(self):
+        # add span from this root to match root
+        return sum(
+            m.span + get_relative_depth(m.root, self.root)
+            for m in self.match_by_key.values()
+        )
+
+    def get_similarity_to(self, match: "Match"):
+        assert isinstance(match, self.__class__)
+        keys = set(self.match_by_key.keys()).intersection(
+            set(match.match_by_key.keys())
+        )
+        return sum(
+            self.match_by_key[key].get_similarity_to(match.match_by_key[key])
+            for key in keys
+        )
+
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.match_by_key=}>"
 
@@ -127,6 +160,17 @@ class ListMatch(Match):
     def root(self) -> Node:
         return get_root_node([m.root for m in self.matches])
 
+    @cached_property
+    def span(self):
+        return sum(get_relative_depth(m.root, self.root) + m.span for m in self.matches)
+
+    def get_similarity_to(self, match: "Match"):
+        assert isinstance(match, self.__class__)
+        return sum(
+            lm1.get_similarity_to(lm2)
+            for lm1, lm2 in product(self.matches, match.matches)
+        )
+
 
 class ValueMatch(Match):
     node = None
@@ -142,6 +186,20 @@ class ValueMatch(Match):
     @property
     def root(self) -> Node:
         return self.node
+
+    @property
+    def span(self):
+        return 0
+
+    def get_similarity_to(self, match: "Match"):
+        assert isinstance(match, self.__class__)
+        if self.extractor != match.extractor:
+            return 0
+
+        if self.node.tag_name != match.node.tag_name:
+            return 0
+
+        return 1
 
 
 def generate_all_value_matches(
