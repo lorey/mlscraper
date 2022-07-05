@@ -128,6 +128,7 @@ def train_scraper_for_matches(matches, roots, complexity: int):
             None,
         )
         if not selector:
+            logging.info(f"did not find selector for matches ({matches=})")
             raise NoScraperFoundException(f"no selector found {matches=}")
         logging.info(f"found selector for ValueScraper ({selector=})")
         return ValueScraper(selector, extractor)

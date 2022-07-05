@@ -1,10 +1,11 @@
 import logging
+import typing
 from itertools import product
 
 from mlscraper.html import Node
 from mlscraper.util import no_duplicates_generator_decorator
+from mlscraper.util import powerset_max_length
 from more_itertools import first
-from more_itertools import powerset
 
 
 class Selector:
@@ -43,6 +44,17 @@ class CssRuleSelector(Selector):
     def select_all(self, node: Node):
         return node.select(self.css_rule)
 
+    def uniquely_selects(self, root: Node, nodes: typing.Collection[Node]):
+        # directly using soups:
+        # - avoids creating nodes for all selects
+        # - increases caching effort
+        # return root.soup.select(self.css_rule) == [n.soup for n in nodes]
+
+        # using select
+        # - creates nodes for every soup object
+        # - leverages caching
+        return root.select(self.css_rule) == nodes
+
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.css_rule=}>"
 
@@ -58,7 +70,7 @@ def generate_unique_selectors_for_nodes(nodes: list[Node], roots, complexity: in
     nodes_per_root = {r: [n for n in nodes if n.has_parent(r)] for r in set(roots)}
     for selector in generate_selectors_for_nodes(nodes, roots, complexity):
         if all(
-            selector.select_all(r) == nodes_of_root
+            selector.uniquely_selects(r, nodes_of_root)
             for r, nodes_of_root in nodes_per_root.items()
         ):
             yield selector
@@ -85,7 +97,12 @@ def generate_selectors_for_nodes(nodes: list[Node], roots, complexity: int):
         [p for p in n.parents if p.has_parent(r) and p.tag_name != "html"]
         for n, r in zip(nodes, roots)
     ]
-    for ancestors in product(*ancestors_below_roots):
+    ancestor_combinations = sorted(
+        product(*ancestors_below_roots),
+        key=lambda ancestors: len({c for a in ancestors for c in a.classes}),
+        reverse=True,
+    )
+    for ancestors in ancestor_combinations:
         for ancestor_selector_raw in _generate_direct_css_selectors_for_nodes(
             ancestors
         ):
@@ -110,8 +127,6 @@ def _generate_direct_css_selectors_for_nodes(nodes: list[Node]):
     for css_selector in _generate_direct_css_selectors_for_nodes_without_pseudo(nodes):
         yield css_selector
 
-    # pull to the end as far as possible
-    for css_selector in _generate_direct_css_selectors_for_nodes_without_pseudo(nodes):
         if all(n.tag_name not in ["html", "body"] for n in nodes):
             child_indexes = [n.parent.select(css_selector).index(n) for n in nodes]
             if len(set(child_indexes)) == 1:
@@ -135,7 +150,11 @@ def _generate_direct_css_selectors_for_nodes_without_pseudo(nodes: list[Node]):
 
     # check for common classes
     common_classes = set.intersection(*[set(n.classes) for n in nodes])
-    for class_combination in powerset(common_classes):
+
+    # ignore selectors containing colons
+    common_classes = [cc for cc in common_classes if ":" not in cc]
+
+    for class_combination in powerset_max_length(common_classes, 2):
         if class_combination:
             css_selector = "".join(map(lambda cl: "." + cl, class_combination))
             yield css_selector

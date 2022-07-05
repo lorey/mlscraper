@@ -199,7 +199,11 @@ class ValueMatch(Match):
         if self.node.tag_name != match.node.tag_name:
             return 0
 
-        return 1
+        jaccard_top = len(set(self.node.classes).intersection(match.node.classes))
+        jaccard_bottom = len(set(self.node.classes).union(match.node.classes))
+        if jaccard_top == jaccard_bottom:
+            return 1  # also 0/0
+        return jaccard_top / jaccard_bottom
 
 
 def generate_all_value_matches(

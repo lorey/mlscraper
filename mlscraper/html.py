@@ -175,15 +175,13 @@ def get_root_node(nodes: list[Node]) -> Node:
 
 
 def get_relative_depth(node: Node, root: Node):
-    node_parents = list(node.soup.parents)
-
-    # depth of root
-    i = node_parents.index(root.soup)
-
-    # depth of element
-    j = len(node_parents)
-
-    return j - i
+    """
+    Return the relative depth of node inside tree starting from root.
+    """
+    hierarchy = list(reversed([node] + node.parents))
+    assert node in hierarchy
+    assert root in hierarchy
+    return hierarchy.index(node) - hierarchy.index(root)
 
 
 def selector_matches_nodes(root: Node, selector: str, expected: list[Node]):

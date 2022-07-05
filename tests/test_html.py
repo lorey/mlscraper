@@ -1,3 +1,4 @@
+from mlscraper.html import get_relative_depth
 from mlscraper.html import get_root_node
 from mlscraper.html import HTMLExactTextMatch
 from mlscraper.html import Page
@@ -115,3 +116,12 @@ def test_find_text_with_noise():
         not isinstance(html_match, HTMLExactTextMatch)
         for html_match in page.find_all("karl")
     )
+
+
+def test_get_relative_depth():
+    html = b"<html><body><p>bla karl bla</p></body></html>"
+    page = Page(html)
+    p_tag = page.select("p")[0]
+    assert get_relative_depth(p_tag, p_tag) == 0
+    assert get_relative_depth(p_tag, p_tag.parent) == 1
+    assert get_relative_depth(p_tag, p_tag.parent.parent) == 2
