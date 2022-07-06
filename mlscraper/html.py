@@ -10,7 +10,32 @@ from dataclasses import dataclass
 from functools import cached_property
 
 from bs4 import BeautifulSoup
-from bs4 import NavigableString
+from bs4.element import NavigableString
+from bs4.element import Tag
+
+
+class MlscraperTag(Tag):
+    """
+    mlscraper's own BeautifulSoup Tag that caches hashes.
+    """
+
+    def __hash__(self):
+        # Why change __hash__?
+
+        # bs4 implements Tag.__hash__ by calling str(self).__hash__()
+        # which hashes the text contents of tags.
+        # For our use case, this slows down many html-related functions
+        # because set operations and equality checks rely on __hash__.
+        # To circumvent this, we lazily cache hashes
+
+        # warning: this assumes the soup to be static (which works for us)
+
+        if not self._hash:
+            # hash once and store
+            self._hash = str(self).__hash__()
+
+        # return stored hash
+        return self._hash
 
 
 @dataclass
@@ -140,7 +165,9 @@ class Page(Node):
 
     def __init__(self, html):
         self.html = html
-        soup = BeautifulSoup(self.html, "lxml")
+
+        # use own Tag for lazy hashing
+        soup = BeautifulSoup(self.html, "lxml", element_classes={Tag: MlscraperTag})
 
         # register node for each soup
         self._node_registry = {soup: self}
