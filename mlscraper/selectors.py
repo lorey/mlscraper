@@ -48,20 +48,21 @@ class CssRuleSelector(Selector):
         return node.select(self.css_rule)
 
     def uniquely_selects(self, root: Node, nodes: typing.Collection[Node]):
+        # limit +1
+        # ensures mismatch if selection result starts with nodes
+        # e.g. select returns [1,2,3,...] and nodes is [1,2,3]
+        # but decreases load with many results significantly
+        limit = len(nodes) + 1
+
         # directly using soups:
         # - avoids creating nodes for all selects
         # - increases caching effort
-
-        # limit +1 ensures mismatch
-        # if selection result starts with nodes
-        # e.g. select returns [1,2,3,...] and nodes is [1,2,3]
-        limit = len(nodes) + 1
         return root.soup.select(self.css_rule, limit=limit) == [n.soup for n in nodes]
 
         # using select
         # - creates nodes for every soup object
         # - leverages caching
-        # return root.select(self.css_rule) == nodes
+        # return root.select(self.css_rule, limit=limit) == nodes
 
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.css_rule=}>"
@@ -77,8 +78,9 @@ def generate_unique_selectors_for_nodes(
         logging.info("roots is None, using pages as roots")
         roots = [n.page for n in nodes]
 
-    nodes_per_root = {r: [n for n in nodes if n.has_parent(r)] for r in set(roots)}
+    nodes_per_root = {r: [n for n in nodes if n.has_ancestor(r)] for r in set(roots)}
     for selector in generate_selectors_for_nodes(nodes, roots, complexity):
+        logging.info(f"check if unique: {selector}")
         if all(
             selector.uniquely_selects(r, nodes_of_root)
             for r, nodes_of_root in nodes_per_root.items()
@@ -180,6 +182,7 @@ def _generate_regular_node_selectors(node: Node):
             yield f'{node.tag_name}[{attribute}="{value}"]'
 
 
+@functools.cache
 def _get_path_selectors(node: Node, max_length: int) -> tuple[str]:
     return tuple(set(_generate_path_selectors(node, max_length)))
 

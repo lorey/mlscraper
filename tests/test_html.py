@@ -16,10 +16,16 @@ def test_get_root_nodes():
 def test_node_parents():
     html = b'<html><body><div><p id="one"></p><p><span id="two"></span></p></div></body></html>'
     page = Page(html)
+    assert page.select("html")[0].parent == page, "html's parent should be page"
+
+
+def test_node_ancestors():
+    html = b'<html><body><div><p id="one"></p><p><span id="two"></span></p></div></body></html>'
+    page = Page(html)
     element = page.select("#one")[0]
     ancestors = element.ancestors
     assert ancestors[0] == element.parent, "first ancestor should be parent"
-    assert ancestors[-1].tag_name == "html", "last ancestor should be html"
+    assert isinstance(ancestors[-1], Page), "last ancestor should be page"
 
 
 def test_node_set():
@@ -77,7 +83,7 @@ def test_find_text_with_whitespace():
     page = Page(html)
     html_matches = page.find_all("whitespace")
 
-    # should match p, body, html
+    # should match p, body, html, but not page
     assert len(html_matches) == 3
     assert all(isinstance(hm, HTMLExactTextMatch) for hm in html_matches)
 

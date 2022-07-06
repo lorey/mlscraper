@@ -89,7 +89,7 @@ class Node:
             yield HTMLExactTextMatch(node)
 
             for p in node.ancestors:
-                if p.text.strip() == node.text.strip():
+                if p.text.strip() == node.text.strip() and not isinstance(p, Page):
                     yield HTMLExactTextMatch(p)
 
         # attributes
@@ -101,9 +101,14 @@ class Node:
 
         # todo implement other find methods
 
-    def has_parent(self, node: "Node") -> bool:
-        for p in self.soup.parents:
-            if p == node.soup:
+    def has_ancestor(self, node: "Node") -> bool:
+        # early return if different page
+        if self._page != node._page:
+            return False
+
+        # inline to avoid creating ancestors
+        for a in self.soup.parents:
+            if a == node.soup:
                 return True
         return False
 
@@ -114,7 +119,7 @@ class Node:
         """
         # don't return parent if it would be above <html> tag
         if self.tag_name in ["html", "[document]"]:
-            return None
+            return self._page
 
         return self._page._get_node_for_soup(self.soup.parent)
 
@@ -144,9 +149,10 @@ class Node:
     def html_attributes(self):
         return self.soup.attrs
 
-    def select(self, css_selector):
+    def select(self, css_selector, limit=None):
         return [
-            self._page._get_node_for_soup(n) for n in self.soup.select(css_selector)
+            self._page._get_node_for_soup(n)
+            for n in self.soup.select(css_selector, limit=limit)
         ]
 
     def __repr__(self):
@@ -195,6 +201,10 @@ class Page(Node):
         if soup not in self._node_registry:
             self._node_registry[soup] = Node(soup, self)
         return self._node_registry[soup]
+
+    @property
+    def parent(self):
+        return None
 
 
 def get_root_node(nodes: list[Node]) -> Node:

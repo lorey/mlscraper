@@ -29,16 +29,12 @@ class Match:
     def has_overlap(self, other_match: "Match"):
         assert isinstance(other_match, Match)
 
-        # early return if different document
-        if self.root.page != other_match.root.page:
-            return False
-
         return (
             # overlap if same root node
             self.root == other_match.root
             # or if one is a parent of the other one
-            or self.root.has_parent(other_match.root)
-            or other_match.root.has_parent(self.root)
+            or self.root.has_ancestor(other_match.root)
+            or other_match.root.has_ancestor(self.root)
         )
 
     @property
