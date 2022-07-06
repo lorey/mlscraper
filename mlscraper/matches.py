@@ -30,7 +30,7 @@ class Match:
         assert isinstance(other_match, Match)
 
         # early return if different document
-        if self.root.root != other_match.root.root:
+        if self.root.page != other_match.root.page:
             return False
 
         return (

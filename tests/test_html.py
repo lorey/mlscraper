@@ -2,8 +2,6 @@ from mlscraper.html import get_relative_depth
 from mlscraper.html import get_root_node
 from mlscraper.html import HTMLExactTextMatch
 from mlscraper.html import Page
-from mlscraper.html import selector_matches_nodes
-from mlscraper.matches import AttributeValueExtractor
 
 
 def test_get_root_nodes():
@@ -13,6 +11,15 @@ def test_get_root_nodes():
     node_2 = page.select("#two")[0]
     root = get_root_node([node_1, node_2])
     assert root == page.select("div")[0]
+
+
+def test_node_parents():
+    html = b'<html><body><div><p id="one"></p><p><span id="two"></span></p></div></body></html>'
+    page = Page(html)
+    element = page.select("#one")[0]
+    ancestors = element.ancestors
+    assert ancestors[0] == element.parent, "first ancestor should be parent"
+    assert ancestors[-1].tag_name == "html", "last ancestor should be html"
 
 
 def test_node_set():
@@ -33,25 +40,6 @@ class TestPage:
         page = stackoverflow_samples[0].page
         nodes = page.find_all("/users/624900/jterrace")
         assert nodes
-
-
-def test_attribute_extractor():
-    html_ = (
-        b'<html><body><a href="https://karllorey.com"></a><a>no link</a></body></html>'
-    )
-    page = Page(html_)
-    extractor = AttributeValueExtractor("href")
-    a_tags = page.select("a")
-    assert extractor.extract(a_tags[0]) == "https://karllorey.com"
-    assert extractor.extract(a_tags[1]) is None
-
-
-def test_extractor_factory():
-    # we want to make sure that each extractor exists only once
-    # as we need this to ensure extractor selection
-    e1 = AttributeValueExtractor("href")
-    e2 = AttributeValueExtractor("href")
-    assert len({e1, e2}) == 1
 
 
 def test_equality():
@@ -84,28 +72,13 @@ def test_classes():
     assert tag_node.classes == ["box", "bordered"]
 
 
-def test_selector_matches_nodes():
-    html = b"<html><body><p>1</p><p>2</p></body></html>"
-    page = Page(html)
-
-    p_tags = page.select("p")
-    assert selector_matches_nodes(
-        page, "p", p_tags
-    ), "does not match properly ordered tags"
-
-    p_tags_reversed = list(reversed(p_tags))
-    assert not selector_matches_nodes(
-        page, "p", p_tags_reversed
-    ), "matches reversed order"
-
-
 def test_find_text_with_whitespace():
     html = b"<html><body><p>    whitespace  \n\t </p></body></html>"
     page = Page(html)
     html_matches = page.find_all("whitespace")
 
-    # should match p, body, html (and document)
-    assert len(html_matches) == 4
+    # should match p, body, html
+    assert len(html_matches) == 3
     assert all(isinstance(hm, HTMLExactTextMatch) for hm in html_matches)
 
 

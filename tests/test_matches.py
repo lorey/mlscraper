@@ -17,3 +17,23 @@ def test_is_dimensions_match_generation():
     assert matches_unfiltered
     matches = [m for m in matches_unfiltered if not is_dimensions_match(m)]
     assert not matches
+
+
+def test_attribute_extractor():
+    html_ = (
+        b'<html><body><a href="https://karllorey.com"></a><a>no link</a></body></html>'
+    )
+    page = Page(html_)
+    extractor = AttributeValueExtractor("href")
+    a_tags = page.select("a")
+    assert extractor.extract(a_tags[0]) == "https://karllorey.com"
+    assert extractor.extract(a_tags[1]) is None
+
+
+def test_extractor_equality():
+    # we want to make sure that each extractor exists only once
+    # as we need this to ensure extractor selection
+    e1 = AttributeValueExtractor("href")
+    e2 = AttributeValueExtractor("href")
+    assert e1 == e2
+    assert len({e1, e2}) == 1

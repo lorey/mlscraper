@@ -1,11 +1,14 @@
+import functools
 import logging
 import typing
-from itertools import product
 
+from mlscraper.html import make_selector_for_classes
 from mlscraper.html import Node
 from mlscraper.util import no_duplicates_generator_decorator
-from mlscraper.util import powerset_max_length
-from more_itertools import first
+from more_itertools import powerset
+
+# ids are used with #id, classes are used, too and rel is too generic
+ATTRIBUTE_SELECTOR_BLACKLIST = ("id", "class", "rel")
 
 
 class Selector:
@@ -48,24 +51,31 @@ class CssRuleSelector(Selector):
         # directly using soups:
         # - avoids creating nodes for all selects
         # - increases caching effort
-        # return root.soup.select(self.css_rule) == [n.soup for n in nodes]
+
+        # limit +1 ensures mismatch
+        # if selection result starts with nodes
+        # e.g. select returns [1,2,3,...] and nodes is [1,2,3]
+        limit = len(nodes) + 1
+        return root.soup.select(self.css_rule, limit=limit) == [n.soup for n in nodes]
 
         # using select
         # - creates nodes for every soup object
         # - leverages caching
-        return root.select(self.css_rule) == nodes
+        # return root.select(self.css_rule) == nodes
 
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.css_rule=}>"
 
 
-def generate_unique_selectors_for_nodes(nodes: list[Node], roots, complexity: int):
+def generate_unique_selectors_for_nodes(
+    nodes: list[Node], roots, complexity: int
+) -> typing.Generator[Selector, None, None]:
     """
     generate a unique selector which only matches the given nodes.
     """
     if roots is None:
-        logging.info("roots is None, setting roots manually")
-        roots = [n.root for n in nodes]
+        logging.info("roots is None, using pages as roots")
+        roots = [n.page for n in nodes]
 
     nodes_per_root = {r: [n for n in nodes if n.has_parent(r)] for r in set(roots)}
     for selector in generate_selectors_for_nodes(nodes, roots, complexity):
@@ -74,10 +84,15 @@ def generate_unique_selectors_for_nodes(nodes: list[Node], roots, complexity: in
             for r, nodes_of_root in nodes_per_root.items()
         ):
             yield selector
+        else:
+            # not unique
+            pass
 
 
 @no_duplicates_generator_decorator
-def generate_selectors_for_nodes(nodes: list[Node], roots, complexity: int):
+def generate_selectors_for_nodes(
+    nodes: list[Node], roots, complexity: int
+) -> typing.Generator[CssRuleSelector, None, None]:
     """
     Generate a selector which matches the given nodes.
     """
@@ -89,97 +104,106 @@ def generate_selectors_for_nodes(nodes: list[Node], roots, complexity: int):
     assert roots, "no roots given"
     assert len(nodes) == len(roots)
 
-    direct_css_selectors = list(_generate_direct_css_selectors_for_nodes(nodes))
-    for direct_css_selector in direct_css_selectors:
-        yield CssRuleSelector(direct_css_selector)
-
-    ancestors_below_roots = [
-        [p for p in n.parents if p.has_parent(r) and p.tag_name != "html"]
-        for n, r in zip(nodes, roots)
-    ]
-    ancestor_combinations = sorted(
-        product(*ancestors_below_roots),
-        key=lambda ancestors: len({c for a in ancestors for c in a.classes}),
-        reverse=True,
-    )
-    for ancestors in ancestor_combinations:
-        for ancestor_selector_raw in _generate_direct_css_selectors_for_nodes(
-            ancestors
-        ):
-            # generate refinement selectors for parents
-            # e.g. if selectivity of child selector is not enough
-            for css_selector_raw in direct_css_selectors:
-                css_selector_combined = ancestor_selector_raw + " " + css_selector_raw
-                yield CssRuleSelector(css_selector_combined)
-
-                # make parent selector
-                if all(node.parent == parent for node, parent in zip(nodes, ancestors)):
-                    yield CssRuleSelector(
-                        f"{ancestor_selector_raw} > {css_selector_raw}"
-                    )
+    list_of_selector_sets = (set(_get_path_selectors(n, complexity)) for n in nodes)
+    common_selectors = set.intersection(*list_of_selector_sets)
+    yield from (CssRuleSelector(cs) for cs in _sorted_css_selectors(common_selectors))
 
 
-def _generate_direct_css_selectors_for_nodes(nodes: list[Node]):
-    # pseudo classes apply to already generated selectors
-    # and can thus be applied in retrospect
+def _sorted_css_selectors(selectors: typing.Iterable[str]):
+    """
+    Sorts css selectors by their complexity.
+    """
+    return sorted(selectors, key=len)
 
-    # see: https://developer.mozilla.org/en-US/docs/Web/CSS/:nth-child
-    for css_selector in _generate_direct_css_selectors_for_nodes_without_pseudo(nodes):
-        yield css_selector
 
-        if all(n.tag_name not in ["html", "body"] for n in nodes):
-            child_indexes = [n.parent.select(css_selector).index(n) for n in nodes]
-            if len(set(child_indexes)) == 1:
-                # nth is indexed with 1
-                nth = 1 + child_indexes[0]
+@functools.cache
+def _get_node_selectors(node: Node):
+    """
+    All selectors for that node (without a path).
+    """
+    return tuple(set(_generate_node_selectors(node)))
+
+
+def _generate_node_selectors(node: Node):
+    if node.tag_name in ["html", "body"]:
+        return
+
+    # we have to add pseudo-selectors after generating the regular ones
+    selectors = set(_generate_regular_node_selectors(node))
+    yield from selectors
+
+    # generate :nth-child
+    if node.parent:
+        for css_selector in selectors:
+            is_id = css_selector.startswith("#")
+            if not is_id:
+                # find out which index this element has if you select
+                # add one to deal with 1-based indexing
+                nth = node.parent.select(css_selector).index(node) + 1
                 yield f"{css_selector}:nth-child({nth})"
+            else:
+                # is an id, distinct enough
+                pass
 
 
-def _generate_direct_css_selectors_for_nodes_without_pseudo(nodes: list[Node]):
-    # check for same tag name
-    is_same_tag = len({n.tag_name for n in nodes}) == 1
-    common_tag_name = nodes[0].tag_name if is_same_tag else None
-    if common_tag_name:
-        yield common_tag_name
+def _generate_regular_node_selectors(node: Node):
+    """
+    This generates all selectors for this specific node without ancestor selectors.
+    """
 
-    # check for common id
-    common_ids = {n.id for n in nodes}
-    is_same_id = len(common_ids) == 1
-    if is_same_id and None not in common_ids:
-        yield "#" + first(common_ids)
+    # tag name
+    yield node.tag_name
 
-    # check for common classes
-    common_classes = set.intersection(*[set(n.classes) for n in nodes])
+    # ids
+    if node.id:
+        yield f"#{node.id}"
 
-    # ignore selectors containing colons
-    common_classes = [cc for cc in common_classes if ":" not in cc]
+    # classes
+    # filter out classes containing a colon, not supported by soupsieve
+    classes = [c for c in node.classes if ":" not in c]
 
-    for class_combination in powerset_max_length(common_classes, 2):
+    for class_combination in powerset(classes):
         if class_combination:
-            css_selector = "".join(map(lambda cl: "." + cl, class_combination))
-            yield css_selector
-
-            # if same tag name, also yield tag_name + selector
-            if common_tag_name:
-                yield common_tag_name + css_selector
+            class_selector = make_selector_for_classes(class_combination)
+            yield class_selector
+            yield f"{node.tag_name}{class_selector}"
         else:
-            # empty combination -> ignore
+            # empty set
             pass
 
-    # check for common attributes
-    # see: https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors
-    if common_tag_name:
-        common_attributes = set.intersection(
-            *[set(n.html_attributes.keys()) for n in nodes]
-        )
-        common_attributes_filtered = [
-            ca for ca in common_attributes if ca not in ["id", "class", "rel"]
-        ]
-        for common_attribute in common_attributes_filtered:
-            yield f"{common_tag_name}[{common_attribute}]"
+    # attribute
+    # todo this is actually a pseudo element and can be applied to all selectors
+    # id was used already, classes and rel are too generic
+    for attribute, value in node.html_attributes.items():
+        if attribute not in ATTRIBUTE_SELECTOR_BLACKLIST:
+            yield f"{node.tag_name}[{attribute}]"
+            yield f'{node.tag_name}[{attribute}="{value}"]'
 
-            # check for common attribute values
-            attribute_values = {n.html_attributes[common_attribute] for n in nodes}
-            if len(attribute_values) == 1:
-                common_attribute_value = first(attribute_values)
-                yield f'{common_tag_name}[{common_attribute}="{common_attribute_value}"]'
+
+def _get_path_selectors(node: Node, max_length: int) -> tuple[str]:
+    return tuple(set(_generate_path_selectors(node, max_length)))
+
+
+def _generate_path_selectors(
+    node: Node, max_length: int
+) -> typing.Generator[str, None, None]:
+    def is_unique(css_sel: str):
+        return css_sel.startswith("#")
+
+    if max_length < 1:
+        return
+
+    # return node selectors themselves
+    yield from _get_node_selectors(node)
+
+    # return combined selectors
+    for node_selector in _get_node_selectors(node):
+        if not is_unique(node_selector):
+            for ancestor in node.ancestors:
+                for ancestor_selector in _get_path_selectors(ancestor, max_length - 1):
+                    yield f"{ancestor_selector} {node_selector}"
+                    if ancestor == node.parent:
+                        yield f"{ancestor_selector} > {node_selector}"
+        else:
+            # path is unique already, no need to append ancestor selectors
+            pass

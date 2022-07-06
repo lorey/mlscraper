@@ -3,8 +3,8 @@ Encapsulation of html-related functionality.
 BeautifulSoup should only get used here.
 """
 import html
-import logging
 import re
+import typing
 from abc import ABC
 from dataclasses import dataclass
 from functools import cached_property
@@ -63,16 +63,12 @@ class Node:
         self._hash = None
 
     @property
-    def root(self):
+    def page(self):
         return self._page
 
     @cached_property
     def depth(self):
         return self.parent.depth
-
-    @cached_property
-    def parent(self):
-        return self._page._get_node_for_soup(self.soup.parent)
 
     @cached_property
     def text(self):
@@ -92,7 +88,7 @@ class Node:
             node = self._page._get_node_for_soup(soup_node.parent)
             yield HTMLExactTextMatch(node)
 
-            for p in node.parents:
+            for p in node.ancestors:
                 if p.text.strip() == node.text.strip():
                     yield HTMLExactTextMatch(p)
 
@@ -105,15 +101,32 @@ class Node:
 
         # todo implement other find methods
 
-    def has_parent(self, node: "Node"):
+    def has_parent(self, node: "Node") -> bool:
         for p in self.soup.parents:
             if p == node.soup:
                 return True
         return False
 
     @cached_property
-    def parents(self):
-        return [self._page._get_node_for_soup(p) for p in self.soup.parents]
+    def parent(self):
+        """
+        Get parent node.
+        """
+        # don't return parent if it would be above <html> tag
+        if self.tag_name in ["html", "[document]"]:
+            return None
+
+        return self._page._get_node_for_soup(self.soup.parent)
+
+    @cached_property
+    def ancestors(self) -> list["Node"]:
+        """
+        Return all ancestors starting with the parent.
+        """
+        if self.parent:
+            return [self.parent] + self.parent.ancestors
+        else:
+            return []
 
     @property
     def classes(self):
@@ -190,7 +203,7 @@ def get_root_node(nodes: list[Node]) -> Node:
 
     # generate parent paths from top to bottom
     # [elem, parent, ancestor, root]
-    parent_paths = [reversed([n] + n.parents) for n in nodes]
+    parent_paths = [reversed([n] + n.ancestors) for n in nodes]
 
     # start looping from bottom to top
     # zip automatically uses common length
@@ -205,20 +218,14 @@ def get_relative_depth(node: Node, root: Node):
     """
     Return the relative depth of node inside tree starting from root.
     """
-    hierarchy = list(reversed([node] + node.parents))
+    hierarchy = list(reversed([node] + node.ancestors))
     assert node in hierarchy
     assert root in hierarchy
     return hierarchy.index(node) - hierarchy.index(root)
 
 
-def selector_matches_nodes(root: Node, selector: str, expected: list[Node]):
-    """
-    Check whether the given selector matches the expected nodes.
-    """
-    logging.info(
-        f"checking if selector matches nodes ({root=}, {selector=}, {expected=})"
-    )
-    # we care for equality here
-    # as selector should match the expected nodes in the exact given order
-    # we do this here, as wrapping Nodes can have side effects regarding equality
-    return root.soup.select(selector) == [n.soup for n in expected]
+def make_selector_for_classes(class_combination: typing.Collection[str]):
+    # sort to make deterministic
+    # (avoid duplicates like .a.b and .b.a from different calls)
+    css_selectors_classes = sorted(f".{cl}" for cl in class_combination)
+    return "".join(css_selectors_classes)

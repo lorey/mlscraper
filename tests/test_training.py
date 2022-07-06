@@ -86,7 +86,7 @@ def test_train_scraper_stackoverflow(stackoverflow_samples):
     for s in stackoverflow_samples:
         training_set.add_sample(s)
 
-    scraper = train_scraper(training_set)
+    scraper = train_scraper(training_set, complexity=2)
     assert isinstance(scraper, ListScraper)
     assert isinstance(scraper.selector, CssRuleSelector)
 
@@ -151,7 +151,7 @@ def test_train_scraper_github():
         training_set.add_sample(sample)
 
     # train
-    scraper = train_scraper(training_set)
+    scraper = train_scraper(training_set, complexity=2)
 
     login_target = "jonashaag"
     page_target = profile_as_page(login_target)
