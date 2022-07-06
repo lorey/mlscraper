@@ -75,7 +75,7 @@ def test_classes():
     html = b'<html><body><p class="box bordered">bla</p></body></html>'
     p = Page(html)
     tag_node = p.select("p")[0]
-    assert tag_node.classes == ["box", "bordered"]
+    assert tag_node.classes == ("box", "bordered")
 
 
 def test_find_text_with_whitespace():

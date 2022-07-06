@@ -14,6 +14,10 @@ from bs4.element import NavigableString
 from bs4.element import Tag
 
 
+# dots and slashes break bs4/soupsieve
+CLASS_CHAR_BLACKLIST = tuple(":/")
+
+
 class MlscraperTag(Tag):
     """
     mlscraper's own BeautifulSoup Tag that caches hashes.
@@ -134,8 +138,8 @@ class Node:
             return []
 
     @property
-    def classes(self):
-        return self.soup.attrs.get("class", [])
+    def classes(self) -> tuple[str]:
+        return tuple(filter(is_supported_class, self.soup.attrs.get("class", ())))
 
     @property
     def id(self):
@@ -239,3 +243,21 @@ def make_selector_for_classes(class_combination: typing.Collection[str]):
     # (avoid duplicates like .a.b and .b.a from different calls)
     css_selectors_classes = sorted(f".{cl}" for cl in class_combination)
     return "".join(css_selectors_classes)
+
+
+def is_supported_class(cl):
+    return all(c not in cl for c in CLASS_CHAR_BLACKLIST)
+
+
+def get_similarity(node1: Node, node2: Node) -> float:
+    if node1.tag_name != node2.tag_name:
+        return 0
+
+    jaccard_top = len(set(node1.classes).intersection(node2.classes))
+    jaccard_bottom = len(set(node1.classes).union(node2.classes))
+    if jaccard_top == jaccard_bottom:
+        return 1  # also 0/0
+    jaccard = jaccard_top / jaccard_bottom
+    if node1.parent and node2.parent:
+        jaccard = 0.75 * jaccard + 0.25 * get_similarity(node1.parent, node2.parent)
+    return jaccard

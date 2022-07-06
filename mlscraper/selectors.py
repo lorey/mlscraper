@@ -1,9 +1,11 @@
 import functools
 import logging
+import re
 import typing
 
 from mlscraper.html import make_selector_for_classes
 from mlscraper.html import Node
+from mlscraper.html import Page
 from mlscraper.util import no_duplicates_generator_decorator
 from more_itertools import powerset
 
@@ -127,7 +129,7 @@ def _get_node_selectors(node: Node):
 
 
 def _generate_node_selectors(node: Node):
-    if node.tag_name in ["html", "body"]:
+    if node.tag_name in ["html", "body"] or isinstance(node, Page):
         return
 
     # we have to add pseudo-selectors after generating the regular ones
@@ -135,6 +137,7 @@ def _generate_node_selectors(node: Node):
     yield from selectors
 
     # generate :nth-child
+    # todo this sometimes leads to non-existent selectors?!
     if node.parent:
         for css_selector in selectors:
             is_id = css_selector.startswith("#")
@@ -161,10 +164,7 @@ def _generate_regular_node_selectors(node: Node):
         yield f"#{node.id}"
 
     # classes
-    # filter out classes containing a colon, not supported by soupsieve
-    classes = [c for c in node.classes if ":" not in c]
-
-    for class_combination in powerset(classes):
+    for class_combination in powerset(node.classes):
         if class_combination:
             class_selector = make_selector_for_classes(class_combination)
             yield class_selector
@@ -175,11 +175,17 @@ def _generate_regular_node_selectors(node: Node):
 
     # attribute
     # todo this is actually a pseudo element and can be applied to all selectors
-    # id was used already, classes and rel are too generic
+
+    def is_plain_attribute_value(v):
+        """filters out attributes that are complex and yield errors"""
+        return re.match(r"[A-z \-]", v)
+
     for attribute, value in node.html_attributes.items():
         if attribute not in ATTRIBUTE_SELECTOR_BLACKLIST:
             yield f"{node.tag_name}[{attribute}]"
-            yield f'{node.tag_name}[{attribute}="{value}"]'
+
+            if is_plain_attribute_value(value):
+                yield f'{node.tag_name}[{attribute}="{value}"]'
 
 
 @functools.cache
@@ -210,3 +216,17 @@ def _generate_path_selectors(
         else:
             # path is unique already, no need to append ancestor selectors
             pass
+
+
+@functools.cache
+def _estimated_selectivity(page, selector) -> float:
+    """
+    This returns the estimated selectivity of the selector on the given page,
+    i.e. how well the selectors filters elements.
+    Selectors that are unique or cannot be found, return 1.
+    Regular selectors like "a" return something close to 0.
+    """
+    # selectivity: higher is better, 1 is unique
+    search_limit = 10
+    results = page.select(selector, limit=search_limit)
+    return 1 - (len(results) / search_limit)

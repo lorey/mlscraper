@@ -9,6 +9,7 @@ from itertools import product
 
 from mlscraper.html import get_relative_depth
 from mlscraper.html import get_root_node
+from mlscraper.html import get_similarity
 from mlscraper.html import HTMLAttributeMatch
 from mlscraper.html import HTMLExactTextMatch
 from mlscraper.html import Node
@@ -189,17 +190,11 @@ class ValueMatch(Match):
 
     def get_similarity_to(self, match: "Match"):
         assert isinstance(match, self.__class__)
+
         if self.extractor != match.extractor:
             return 0
 
-        if self.node.tag_name != match.node.tag_name:
-            return 0
-
-        jaccard_top = len(set(self.node.classes).intersection(match.node.classes))
-        jaccard_bottom = len(set(self.node.classes).union(match.node.classes))
-        if jaccard_top == jaccard_bottom:
-            return 1  # also 0/0
-        return jaccard_top / jaccard_bottom
+        return get_similarity(self.node, match.node)
 
 
 def generate_all_value_matches(
