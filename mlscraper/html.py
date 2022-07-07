@@ -249,15 +249,23 @@ def is_supported_class(cl):
     return all(c not in cl for c in CLASS_CHAR_BLACKLIST)
 
 
-def get_similarity(node1: Node, node2: Node) -> float:
+def get_similarity(node1: Node, node2: Node, depth=3) -> float:
+    if depth < 1:
+        return 0
+
     if node1.tag_name != node2.tag_name:
         return 0
 
+    # compute nodes jaccard similarity
     jaccard_top = len(set(node1.classes).intersection(node2.classes))
     jaccard_bottom = len(set(node1.classes).union(node2.classes))
     if jaccard_top == jaccard_bottom:
         return 1  # also 0/0
     jaccard = jaccard_top / jaccard_bottom
+
+    # add recursion
     if node1.parent and node2.parent:
-        jaccard = 0.75 * jaccard + 0.25 * get_similarity(node1.parent, node2.parent)
+        jaccard = 0.8 * jaccard + 0.2 * get_similarity(
+            node1.parent, node2.parent, depth=depth - 1
+        )
     return jaccard
