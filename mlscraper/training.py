@@ -70,7 +70,7 @@ def train_scraper(training_set: TrainingSet, complexity=100):
             scraper = train_scraper_for_matches(match_combination, roots, complexity)
             return scraper
         except NoScraperFoundException:
-            logging.info(
+            logging.exception(
                 "no scraper found "
                 "for complexity and match_combination "
                 f"({complexity=}, {match_combination=})"
@@ -96,9 +96,6 @@ def train_scraper_for_matches(matches, roots, complexity: int):
     roots = list(roots)
 
     assert len(matches) == len(roots), f"got uneven inputs ({matches=}, {roots=})"
-
-    if len({m.root.soup.name for m in matches}) != 1:
-        raise NoScraperFoundException("different names found")
 
     if any(c1.has_overlap(c2) for c1, c2 in combinations(matches, 2)):
         raise NoScraperFoundException("a pair of matches overlaps, most likely invalid")
@@ -152,10 +149,13 @@ def train_scraper_for_matches(matches, roots, complexity: int):
             # todo we get the same match combinations repeatedly
             #  maybe caching uniquely_selects helps
             #  but it is better to store the actual scraper
-            matches_per_key = [m.match_by_key[k] for m in matches]
             logging.info(f"training key for DictScraper ({k=})")
+            matches_per_key = [m.match_by_key[k] for m in matches]
             logging.info(f"matches for key: {matches_per_key=}")
-            scraper = train_scraper_for_matches(matches_per_key, roots, complexity)
+            try:
+                scraper = train_scraper_for_matches(matches_per_key, roots, complexity)
+            except NoScraperFoundException as e:
+                raise NoScraperFoundException(f'Training DictScraper failed ({k=})') from e
             scraper_per_key[k] = scraper
         logging.info(f"found DictScraper ({scraper_per_key=})")
         return DictScraper(scraper_per_key)
