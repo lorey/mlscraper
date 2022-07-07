@@ -6,6 +6,7 @@ import typing
 from functools import cached_property
 from itertools import combinations
 from itertools import product
+from statistics import mean
 
 from mlscraper.html import get_relative_depth
 from mlscraper.html import get_root_node
@@ -135,7 +136,7 @@ class DictMatch(Match):
         keys = set(self.match_by_key.keys()).intersection(
             set(match.match_by_key.keys())
         )
-        return sum(
+        return mean(
             self.match_by_key[key].get_similarity_to(match.match_by_key[key])
             for key in keys
         )
@@ -163,7 +164,7 @@ class ListMatch(Match):
 
     def get_similarity_to(self, match: "Match"):
         assert isinstance(match, self.__class__)
-        return sum(
+        return mean(
             lm1.get_similarity_to(lm2)
             for lm1, lm2 in product(self.matches, match.matches)
         )

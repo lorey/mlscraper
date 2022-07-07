@@ -1,6 +1,7 @@
 import logging
 from itertools import combinations
 from itertools import product
+from statistics import mean
 
 from mlscraper.matches import DictMatch
 from mlscraper.matches import ListMatch
@@ -25,8 +26,11 @@ class NoScraperFoundException(TrainingException):
 
 
 def get_match_combination_priority(matches):
+    if len(matches) == 1:
+        return 1
+
     # check for similarity between matches
-    return sum(m1.get_similarity_to(m2) for m1, m2 in combinations(matches, 2))
+    return mean(m1.get_similarity_to(m2) for m1, m2 in combinations(matches, 2))
 
 
 def train_scraper(training_set: TrainingSet, complexity=100):
