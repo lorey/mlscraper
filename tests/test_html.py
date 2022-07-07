@@ -1,3 +1,4 @@
+import pytest
 from mlscraper.html import get_relative_depth
 from mlscraper.html import get_root_node
 from mlscraper.html import HTMLExactTextMatch
@@ -47,6 +48,20 @@ class TestPage:
         nodes = page.find_all("/users/624900/jterrace")
         assert nodes
 
+    def test_find_all_with_text_with_noise(self):
+        html = b"<html><body><p>bla karl bla</p></body></html>"
+        page = Page(html)
+        assert all(
+            not isinstance(html_match, HTMLExactTextMatch)
+            for html_match in page.find_all("karl")
+        )
+
+    @pytest.mark.skip("no fuzzy matching yet")
+    def test_find_all_with_nbsp(self):
+        html = "<html><body><p>123&nbsp;€</body></html>".encode()
+        page = Page(html)
+        assert len(page.find_all("123 €")) > 0
+
 
 def test_equality():
     # we want to make sure that equal html does not result in equality
@@ -86,15 +101,6 @@ def test_find_text_with_whitespace():
     # should match p, body, html, but not page
     assert len(html_matches) == 3
     assert all(isinstance(hm, HTMLExactTextMatch) for hm in html_matches)
-
-
-def test_find_text_with_noise():
-    html = b"<html><body><p>bla karl bla</p></body></html>"
-    page = Page(html)
-    assert all(
-        not isinstance(html_match, HTMLExactTextMatch)
-        for html_match in page.find_all("karl")
-    )
 
 
 def test_get_relative_depth():
