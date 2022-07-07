@@ -137,7 +137,7 @@ class Node:
         else:
             return []
 
-    @property
+    @cached_property
     def classes(self) -> tuple[str]:
         return tuple(filter(is_supported_class, self.soup.attrs.get("class", ())))
 
