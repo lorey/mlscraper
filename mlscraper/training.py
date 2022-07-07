@@ -149,6 +149,9 @@ def train_scraper_for_matches(matches, roots, complexity: int):
         # roots are the original roots(?)
         scraper_per_key = {}
         for k in keys:
+            # todo we get the same match combinations repeatedly
+            #  maybe caching uniquely_selects helps
+            #  but it is better to store the actual scraper
             matches_per_key = [m.match_by_key[k] for m in matches]
             logging.info(f"training key for DictScraper ({k=})")
             logging.info(f"matches for key: {matches_per_key=}")

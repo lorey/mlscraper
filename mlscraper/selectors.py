@@ -50,24 +50,29 @@ class CssRuleSelector(Selector):
         return node.select(self.css_rule)
 
     def uniquely_selects(self, root: Node, nodes: typing.Collection[Node]):
-        # limit +1
-        # ensures mismatch if selection result starts with nodes
-        # e.g. select returns [1,2,3,...] and nodes is [1,2,3]
-        # but decreases load with many results significantly
-        limit = len(nodes) + 1
-
-        # directly using soups:
-        # - avoids creating nodes for all selects
-        # - increases caching effort
-        return root.soup.select(self.css_rule, limit=limit) == [n.soup for n in nodes]
-
-        # using select
-        # - creates nodes for every soup object
-        # - leverages caching
-        # return root.select(self.css_rule, limit=limit) == nodes
+        return _uniquely_selects(self.css_rule, root, tuple(nodes))
 
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.css_rule=}>"
+
+
+@functools.lru_cache(10000)
+def _uniquely_selects(css_rule, root, nodes):
+    # limit +1
+    # ensures mismatch if selection result starts with nodes
+    # e.g. select returns [1,2,3,...] and nodes is [1,2,3]
+    # but decreases load with many results significantly
+    limit = len(nodes) + 1
+
+    # directly using soups:
+    # - avoids creating nodes for all selects
+    # - increases caching effort
+    return root.soup.select(css_rule, limit=limit) == [n.soup for n in nodes]
+
+    # using select
+    # - creates nodes for every soup object
+    # - leverages caching
+    # return root.select(self.css_rule, limit=limit) == nodes
 
 
 def generate_unique_selectors_for_nodes(
