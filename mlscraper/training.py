@@ -155,7 +155,9 @@ def train_scraper_for_matches(matches, roots, complexity: int):
             try:
                 scraper = train_scraper_for_matches(matches_per_key, roots, complexity)
             except NoScraperFoundException as e:
-                raise NoScraperFoundException(f'Training DictScraper failed ({k=})') from e
+                raise NoScraperFoundException(
+                    f"Training DictScraper failed ({k=})"
+                ) from e
             scraper_per_key[k] = scraper
         logging.info(f"found DictScraper ({scraper_per_key=})")
         return DictScraper(scraper_per_key)
