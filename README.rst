@@ -50,7 +50,7 @@ After you've defined the data you want to scrape, mlscraper will:
 Getting started
 ---------------
 
-mlscraper is currently short before version 1.0.
+mlscraper is currently shortly before version 1.0.
 If you want to check the new release, use :code:`pip install --pre mlscraper` to test the release candidate.
 You can also install the latest (unstable) development version of mlscraper
 via :code:`pip install git+https://github.com/lorey/mlscraper#egg=mlscraper`,
@@ -74,6 +74,7 @@ To get started with a simple scraped, check out a basic sample below.
     assert resp.status_code == 200
 
     # create a sample for Albert Einstein
+    # please add at least two samples in practice to get meaningful rules!
     training_set = TrainingSet()
     page = Page(resp.content)
     sample = Sample(page, {'name': 'Albert Einstein', 'born': 'March 14, 1879'})
