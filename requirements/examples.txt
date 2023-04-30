@@ -5,14 +5,63 @@
 #
 #    pip-compile-multi
 #
--r tests.txt
-certifi==2022.6.15
+attrs==21.4.0
+    # via pytest
+certifi==2022.12.7
     # via requests
 charset-normalizer==2.1.0
     # via requests
+coverage==6.4.1
+    # via -r tests.in
+distlib==0.3.4
+    # via virtualenv
+filelock==3.7.1
+    # via
+    #   tox
+    #   virtualenv
+flake8==4.0.1
+    # via -r tests.in
 idna==3.3
     # via requests
+iniconfig==1.1.1
+    # via pytest
+mccabe==0.6.1
+    # via flake8
+packaging==21.3
+    # via
+    #   pytest
+    #   tox
+platformdirs==2.5.2
+    # via virtualenv
+pluggy==1.0.0
+    # via
+    #   pytest
+    #   tox
+py==1.11.0
+    # via
+    #   pytest
+    #   tox
+pycodestyle==2.8.0
+    # via flake8
+pyflakes==2.4.0
+    # via flake8
+pyparsing==3.0.9
+    # via packaging
+pytest==7.1.2
+    # via -r tests.in
 requests==2.28.1
-    # via -r requirements/examples.in
+    # via -r examples.in
+six==1.16.0
+    # via
+    #   tox
+    #   virtualenv
+toml==0.10.2
+    # via tox
+tomli==2.0.1
+    # via pytest
+tox==3.25.0
+    # via -r tests.in
 urllib3==1.26.11
     # via requests
+virtualenv==20.14.1
+    # via tox
